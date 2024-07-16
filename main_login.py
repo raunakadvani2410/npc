@@ -19,8 +19,8 @@ import streamlit as st
 def enter_webpage(link):
     # store exe directory
     #cd_path2 = "/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls/npc/chromedriver"
-    cd_path = "./chromedriver"
-
+    #cd_path = "./chromedriver"
+    cd_path = Service('./chromedriver')
     # TODO where does this go??
     chrome_options = Options()
     chrome_options.add_argument("--headless")
@@ -28,7 +28,7 @@ def enter_webpage(link):
 
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
-    driver = webdriver.Chrome(cd_path)
+    driver = webdriver.Chrome(service=cd_path, options= chrome_options)
     #driver = webdriver.Chrome(executable_path=cd_path, options = chrome_options)
     #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = chrome_options)
     #driver = webdriver.Chrome(options = chrome_options)
