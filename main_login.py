@@ -19,7 +19,7 @@ import streamlit as st
 def enter_webpage(link):
     # store exe directory
     #cd_path2 = "/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls/npc/chromedriver"
-    #cd_path = "./chromedriver"
+    cd_path = "./chromedriver"
 
     # TODO where does this go??
     chrome_options = Options()
@@ -29,8 +29,8 @@ def enter_webpage(link):
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
     #driver = webdriver.Chrome(executable_path=cd_path, options = chrome_options)
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = chrome_options)
-    #driver = webdriver.Chrome(options = chrome_options)
+    #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = chrome_options)
+    driver = webdriver.Chrome(options = chrome_options)
 
     # Open the website
     driver.get(link) 
@@ -402,7 +402,7 @@ def is_time_between(begin_time, end_time, check_time=None):
 def main():
     # set wide layout by default
     #st.set_page_config(layout="wide")
-
+    print(os.getcwd())
     # insert title
     #st.title("Option Chain ROC")
 
