@@ -20,7 +20,7 @@ def enter_webpage(link):
     # store exe directory
     #cd_path2 = "/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls/npc/chromedriver"
     #cd_path = "./chromedriver"
-    cd_path = Service('./chrome')
+    cd_path = Service('./chromedriver')
     # TODO where does this go??
     chrome_options = Options()
     chrome_options.add_argument("--headless")
