@@ -28,9 +28,9 @@ def enter_webpage(link):
 
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
-    #driver = webdriver.Chrome(executable_path=cd_path, options = chrome_options)
+    driver = webdriver.Chrome(executable_path=cd_path, options = chrome_options)
     #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = chrome_options)
-    driver = webdriver.Chrome(options = chrome_options)
+    #driver = webdriver.Chrome(options = chrome_options)
 
     # Open the website
     driver.get(link) 
