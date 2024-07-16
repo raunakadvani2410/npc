@@ -401,10 +401,10 @@ def is_time_between(begin_time, end_time, check_time=None):
 
 def main():
     # set wide layout by default
-    st.set_page_config(layout="wide")
+    #st.set_page_config(layout="wide")
 
     # insert title
-    st.title("Option Chain ROC")
+    #st.title("Option Chain ROC")
 
     # set path
     path = '/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls'
@@ -441,14 +441,14 @@ def main():
     print("SAVING RAW DATA AFTER SLICING")
     df.to_csv("raw_data_0.csv")
 
-    st.dataframe(df)
+    #st.dataframe(df)
 
     # wait for 4 minutes
     tm.sleep(5)
 
     counter = 1
     
-    while is_time_between(time(1,5), time(0,58)):
+    while is_time_between(time(10,5), time(10,23)):
         #TODO THIS IS NEW *****
         # enter the webpage first
         page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
@@ -489,16 +489,16 @@ def main():
         earlier_time = min(unique_times)
         all_data = all_data[all_data['time'] != earlier_time]
 
-
+#TODO UNCOMMENT!!
         # if counter is 1: just output the original changes df
-        if counter == 1:
-            st.write(f"Printing change {counter}")
-            changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
-            dataa = st.dataframe(changes, height = len(dataa))
-        elif counter > 1:
-            # append the changes to the master changes df
-            st.write(f"Printing change {counter}")
-            dataa.add_rows(changes)
+        # if counter == 1:
+        #     #st.write(f"Printing change {counter}")
+        #     changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
+        #     #dataa = st.dataframe(changes, height = len(dataa))
+        # elif counter > 1:
+        #     # append the changes to the master changes df
+        #     #st.write(f"Printing change {counter}")
+        #     dataa.add_rows(changes)
         
         # concat dfs
         df_roc = pd.concat([df_roc, changes], ignore_index = True)
@@ -508,7 +508,7 @@ def main():
 
         # save df
         df_roc.to_csv("rates_of_change.csv")
-
+        print(df_roc)
         # print time
         print(f"Update {counter}: Changes saved for {datetime.now().time()} ")
 
