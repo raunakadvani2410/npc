@@ -484,7 +484,7 @@ def main():
 
     counter = 1
     
-    while is_time_between(time(0,2), time(12,4)):
+    while is_time_between(time(0,2), time(18,41)):
         #TODO THIS IS NEW *****
         # enter the webpage first
         #page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
