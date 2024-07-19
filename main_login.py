@@ -430,6 +430,9 @@ def calculate_roc(df):
 def is_time_between(begin_time, end_time, check_time=None):
     # If check time is not given, default to current time
     if check_time is None:
+        #IST = pytz.timezone('Asia/Kolkata') 
+        # get the current datetime
+        #check_time = datetime.now(IST).time()
         check_time = datetime.now().time()
     return begin_time <= check_time <= end_time
 
@@ -487,7 +490,7 @@ def main():
 
     counter = 1
     
-    while is_time_between(time(0,2), time(4,14)):
+    while is_time_between(time(0,2), time(19,25)):
         #TODO THIS IS NEW *****
         # enter the webpage first
         #page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
@@ -570,6 +573,7 @@ def main():
     # shut the virtual display
     disp.stop()
 
+    # 
     # quit the driver
     page_driver.quit()
 
