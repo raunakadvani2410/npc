@@ -15,7 +15,8 @@ import numpy as np
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import streamlit as st
-from pyvirtualdisplay import Display
+import pytz
+#from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
@@ -150,7 +151,7 @@ def login(driver):
     tm.sleep(2)
 
     # remove this?
-    driver.close()
+    #driver.close()
 
     return driver
 
@@ -186,7 +187,7 @@ def find_table(driver):
 
     # close tab
     # TODO remove this?
-    driver.close()
+    #driver.close()
     
     # return the driver and table element
     return driver, data_list
@@ -224,8 +225,8 @@ def find_and_return_table(driver):
     # find table element
     table_data = driver.find_elements(By.XPATH, x_path)
 
-    # sleep for 3 seconds
-    tm.sleep(3)
+    # # sleep for 3 seconds
+    # tm.sleep(3)
 
     for data in table_data:
         data_list = data.text.split()
@@ -235,13 +236,39 @@ def find_and_return_table(driver):
     #driver.close()
     
     # return the table element
-    return data_list
+    return driver, data_list
+
+def find_and_return_table_no_button(driver):
+    # set xpath for div that contains data
+    x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
+
+    # sleep for 3 seconds
+    tm.sleep(3)
+
+    # find table element
+    table_data = driver.find_elements(By.XPATH, x_path)
+
+    # # sleep for 3 seconds
+    # tm.sleep(3)
+
+    for data in table_data:
+        data_list = data.text.split()
+
+    # close tab
+    # TODO will have to keep open?
+    #driver.close()
+    
+    # return the table element
+    return driver, data_list
 
 
 def build_dataframe(data_list):
+    # set IST
+    IST = pytz.timezone('Asia/Kolkata') 
 
     # get the current datetime
-    now = datetime.now()
+    now = datetime.now(IST)
+
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
     # reshape the data into rows of 33 elements
@@ -408,17 +435,18 @@ def is_time_between(begin_time, end_time, check_time=None):
 
 
 def main():
-    disp = Display()
-    disp.start()
+    #disp = Display()
+    #disp.start()
 
     # set wide layout by default
-    #st.set_page_config(layout="wide")
-    print(os.getcwd())
+    st.set_page_config(layout="wide")
+    IST = pytz.timezone('Asia/Kolkata') 
+
     # insert title
-    #st.title("Option Chain ROC")
+    st.title("Option Chain ROC")
 
     # set path
-    path = '/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls'
+    #path = '/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls'
     # TODO add for local
     # os.chdir(path)
 
@@ -435,10 +463,7 @@ def main():
     df_roc = pd.DataFrame()
 
     # initialise data
-    data_list = find_and_return_table(page_driver)
-
-    # wait for 5 seconds for the button
-    tm.sleep(5)
+    page_driver, data_list = find_and_return_table(page_driver)
 
     # build the dataframe from the list
     df = build_dataframe(data_list)
@@ -452,27 +477,28 @@ def main():
     print("SAVING RAW DATA AFTER SLICING")
     df.to_csv("raw_data_0.csv")
 
-    #st.dataframe(df)
+    st.dataframe(df)
 
     # wait for 4 minutes
-    tm.sleep(5)
+    tm.sleep(20)
 
     counter = 1
     
-    while is_time_between(time(10,5), time(10,23)):
+    while is_time_between(time(0,2), time(12,4)):
         #TODO THIS IS NEW *****
         # enter the webpage first
-        page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
+        #page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
         #login()
 
-        tm.sleep(20)
+        #tm.sleep(20)
 
         # get the current nifty futures value
         page_driver, nifty_futures = get_nifty_futures(page_driver)
         print(f"NIFTY VALUE: {nifty_futures}")
 
         # find and return the data
-        data_list = find_and_return_table(page_driver)
+        print("SHOULD PRESS BUTTON NOW")
+        page_driver, data_list = find_and_return_table_no_button(page_driver)
         df_1 = build_dataframe(data_list)
 
         # print original dataframe
@@ -501,15 +527,17 @@ def main():
         all_data = all_data[all_data['time'] != earlier_time]
 
 #TODO UNCOMMENT!!
-        # if counter is 1: just output the original changes df
-        # if counter == 1:
-        #     #st.write(f"Printing change {counter}")
-        #     changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
-        #     #dataa = st.dataframe(changes, height = len(dataa))
-        # elif counter > 1:
-        #     # append the changes to the master changes df
-        #     #st.write(f"Printing change {counter}")
-        #     dataa.add_rows(changes)
+        #if counter is 1: just output the original changes df
+        if counter == 1:
+            st.write(f"Printing change {counter}")
+            changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
+            dataa = st.dataframe(changes, height = 100)
+            #dataa = st.dataframe(changes, height = len(changes))
+
+        elif counter > 1:
+            # append the changes to the master changes df
+            st.write(f"Printing change {counter}")
+            dataa.add_rows(changes)
         
         # concat dfs
         df_roc = pd.concat([df_roc, changes], ignore_index = True)
@@ -521,7 +549,9 @@ def main():
         df_roc.to_csv("rates_of_change.csv")
         print(df_roc)
         # print time
-        print(f"Update {counter}: Changes saved for {datetime.now().time()} ")
+        now = datetime.now(IST)
+
+        print(f"Update {counter}: Changes saved for {now} ")
 
         # update counter
         counter+=1
@@ -535,10 +565,13 @@ def main():
         tm.sleep(20)
     
     # shut the virtual display
-    disp.stop()
+    #disp.stop()
+
+    # quit the driver
+    page_driver.quit()
 
     # return the df
-    return df_roc
+    return
 
 if __name__ == '__main__':
     main()
