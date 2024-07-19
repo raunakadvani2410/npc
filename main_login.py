@@ -442,6 +442,9 @@ def main():
     st.set_page_config(layout="wide")
     IST = pytz.timezone('Asia/Kolkata') 
 
+    now = datetime.now(IST)
+    print(now)
+
     # insert title
     st.title("Option Chain ROC")
 
