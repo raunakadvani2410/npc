@@ -16,7 +16,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import streamlit as st
 import pytz
-#from pyvirtualdisplay import Display
+from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
@@ -435,8 +435,8 @@ def is_time_between(begin_time, end_time, check_time=None):
 
 
 def main():
-    #disp = Display()
-    #disp.start()
+    disp = Display()
+    disp.start()
 
     # set wide layout by default
     st.set_page_config(layout="wide")
@@ -565,7 +565,7 @@ def main():
         tm.sleep(20)
     
     # shut the virtual display
-    #disp.stop()
+    disp.stop()
 
     # quit the driver
     page_driver.quit()
