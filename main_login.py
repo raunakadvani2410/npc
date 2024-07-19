@@ -15,6 +15,7 @@ import numpy as np
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import streamlit as st
+from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
@@ -25,14 +26,20 @@ def enter_webpage(link):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--no-sandbox")
 
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
     driver = webdriver.Chrome(service=cd_path, options= chrome_options)
-    #driver = webdriver.Chrome(executable_path=cd_path, options = chrome_options)
+    #driver = webdriver.Chrome("./chromedriver", options = chrome_options)
     #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = chrome_options)
     #driver = webdriver.Chrome(options = chrome_options)
 
+   # driver = webdriver.Remote(
+   #         command_executor = 'http://172.31.9.13:4444/wd/hub',
+   #         options = chrome_options
+   #         )
     # Open the website
     driver.get(link) 
 
@@ -401,6 +408,9 @@ def is_time_between(begin_time, end_time, check_time=None):
 
 
 def main():
+    disp = Display()
+    disp.start()
+
     # set wide layout by default
     #st.set_page_config(layout="wide")
     print(os.getcwd())
@@ -523,6 +533,11 @@ def main():
         # TODO
         # chnge to 3 mins?
         tm.sleep(20)
+    
+    # shut the virtual display
+    disp.stop()
+
+    # return the df
     return df_roc
 
 if __name__ == '__main__':
