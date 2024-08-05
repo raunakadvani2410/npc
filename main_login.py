@@ -16,6 +16,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import streamlit as st
 import pytz
+import requests
 from pyvirtualdisplay import Display
 
 def enter_webpage(link):
@@ -25,7 +26,7 @@ def enter_webpage(link):
     cd_path = Service('./chromedriver')
     # TODO where does this go??
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--no-sandbox")
@@ -71,6 +72,9 @@ def get_nifty_futures(driver):
     # driver.close()
     return driver, nifty_float    
 
+def click_button():
+    st.session_state.clicked = True
+    print("Session State Changed")
 
 def login(driver):
     # set xpath for login button
@@ -121,86 +125,55 @@ def login(driver):
     # click button
     driver.execute_script("arguments[0].click();", sb);
 
-    # sleep
-    tm.sleep(5)
-
-    # id for otp
-    login_otp = driver.find_element(By.ID, 'userid')
-
-    # prompt the user for login otp
-    while True:
-        otp = input("Please enter a 6-digit mobile code: ")
-        if otp.isdigit() and len(otp) == 6:
-            break
-        else:
-            print("Invalid input. The mobile code must be numeric and 6 digits long.")
-
-    # input the userid
-    login_otp.send_keys(otp)
-
-    # xpath for continue button
-    continue_button_x_path = '//*[@id="container"]/div[2]/div/div[2]/form/div[2]/button'
-
-    # find continue button
-    cb = driver.find_element(By.XPATH, continue_button_x_path)
-
-    # click button
-    driver.execute_script("arguments[0].click();", cb);
-
-    # sleep
     tm.sleep(2)
-
-    # remove this?
-    #driver.close()
 
     return driver
 
-def find_table(driver):
-    # set xpath for select all columns button
-    button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]'
-    # //*[@id="app"]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]
 
+def submit_otp(driver, otp):
     try:
-        # find select all columns button
-        l = driver.find_element(By.XPATH, button_x_path)
+        #tm.sleep(20)
+        # ID for OTP
+        print(f"Submitting OTP {otp} {type(otp)}")
+        otp_input = driver.find_element(By.ID, 'userid')
+        otp_input.send_keys(otp)
 
-        # click button
-        driver.execute_script("arguments[0].click();", l);
-    
-    except NoSuchElementException:
-        print("Button not found, moving on.")
+        # XPath for continue button
+        continue_button_x_path = '//*[@id="container"]/div[2]/div/div[2]/form/div[2]/button'
+        cb = driver.find_element(By.XPATH, continue_button_x_path)
+        driver.execute_script("arguments[0].click();", cb)
+        st.success("OTP entered successfully")
+        tm.sleep(2)
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+    return driver  
 
-    # set xpath for div that contains data
-    x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
 
-    # sleep for 3 seconds
-    tm.sleep(3)
+# OTP Form Handling with Streamlit
+def otp_form(driver):
+    with st.form(key='otp_form'):
+        otp = st.text_input("Enter the OTP sent")
+        submit = st.form_submit_button('Submit')
 
-    # find table element
-    table_data = driver.find_elements(By.XPATH, x_path)
+        if submit:
+            if otp.isnumeric() and len(otp) == 6:
+                try:
+                    login_otp = driver.find_element(By.ID, 'userid')
+                    login_otp.send_keys("123456")
 
-    # sleep for 3 seconds
-    tm.sleep(3)
+                    continue_button_x_path = '//*[@id="container"]/div[2]/div/div[2]/form/div[2]/button'
+                    cb = driver.find_element(By.XPATH, continue_button_x_path)
+                    driver.execute_script("arguments[0].click();", cb)
 
-    for data in table_data:
-        data_list = data.text.split()
-
-    # close tab
-    # TODO remove this?
-    #driver.close()
-    
-    # return the driver and table element
-    return driver, data_list
+                    st.write("OTP entered successfully")
+                    tm.sleep(2)
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+            else:
+                st.error("Invalid input. The OTP must be numeric and 6 digits long.")
 
 
 def find_and_return_table(driver):
-    # add chrome options for headless config
-
-    # TODO where does this go??
-    # chrome_options = Options()
-    # chrome_options.add_argument("--headless")
-    # chrome_options.add_argument("--window-size=1920,1080")
-
 
     # set xpath for select all columns button
     button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]'
@@ -267,9 +240,8 @@ def build_dataframe(data_list):
     IST = pytz.timezone('Asia/Kolkata') 
 
     # get the current datetime
-    now = datetime.now(IST)
-
-    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    #now = datetime.now(IST)
+    dt_string = datetime.now(IST).strftime("%d/%m/%Y %H:%M:%S")
 
     # reshape the data into rows of 33 elements
     rows = [data_list[i:i+33] for i in range(0, len(data_list), 33)]
@@ -326,25 +298,11 @@ def slice_df(df, nifty_futures):
     # calculate the strike prices to keep
     strike_prices_to_keep = [central_strike + i * 100 for i in range(-4, 4)]
 
-    print(f"Central Strike: {central_strike}")
-    print(f"Strike Prices to Keep: {strike_prices_to_keep}")
-
-    # Print the strike_price column before filtering
-    print("Strike Prices in DataFrame before filtering:")
-    print(df['strike_price'].unique())
-
-    print("SAVE DF FOR SANITY")
-    df.to_csv("test.csv")
-
     # filter the dataframe
     df = df[df['strike_price'].isin(strike_prices_to_keep)]
 
     # reset index and remove index column
     df = df.reset_index(drop = True)
-
-    # Print the DataFrame after filtering
-    print("DataFrame after slicing:")
-    print(df.head())
 
     # return the filtered dataframe
     return df
@@ -436,8 +394,39 @@ def is_time_between(begin_time, end_time, check_time=None):
         check_time = datetime.now().time()
     return begin_time <= check_time <= end_time
 
+def style_pos_neg(v, pos='', neg = ''):
+    return pos if v > 0 else neg if v < 0 else None
+
+
+def get_otp_from_flask():
+    # wait for user to input otp
+    otp = None
+    while otp is None:
+        try:
+            tm.sleep(15)
+
+            # URL to get the OTP
+            url = 'https://raunakadvani.pythonanywhere.com/get_otp'
+
+            # Send a GET request to retrieve the OTP
+            response = requests.get(url)
+            print(type(response))
+            if response.status_code == 200:
+                # data = response.json()
+                # otp = data.get('otp', None)
+                # otp = response
+
+
+                data = response.json()
+                otp = data.get('otp')
+                print(f"Retrieved OTP: {otp}")
+        except requests.exceptions.RequestException as e:
+            st.write("Error contacting flask app", e)
+            tm.sleep(10)
+    return otp
 
 def main():
+    #lll
     disp = Display()
     disp.start()
 
@@ -446,145 +435,176 @@ def main():
     IST = pytz.timezone('Asia/Kolkata') 
 
     now = datetime.now(IST)
-    print(now)
+
+    proceed = False
 
     # insert title
     st.title("Option Chain ROC")
 
-    # set path
-    #path = '/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls'
-    # TODO add for local
-    # os.chdir(path)
-
     # enter the webpage first
+    st.write("Entering Sensibull webpage...")
     page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
-    #login()
+    
+    # # login
+    # st.write("Entering login credentials...")
+    # page_driver = login(page_driver)
+    # st.write("OTP sent, enter in app now")
+    # #otp = input("Enter OTP")
 
-    tm.sleep(10)
+
+    # otp = get_otp_from_flask()
+    # print(f"OTP RECEIVED: {otp}")
+    # # tm.sleep(20)
+
+    # page_driver = submit_otp(page_driver, otp)
+    # st.write("OTP submitted, proceeding")
+
+    tm.sleep(15)
     page_driver, nifty_futures = get_nifty_futures(page_driver)
 
-    print(f"Original NIFTY VALUE: {nifty_futures}")
+    # print(f"Original NIFTY VALUE: {nifty_futures}")
 
     # initialise df to hold all the data
     df_roc = pd.DataFrame()
+
+    time_start = datetime.datetime.now()
 
     # initialise data
     page_driver, data_list = find_and_return_table(page_driver)
 
     # build the dataframe from the list
     df = build_dataframe(data_list)
-    print("****PRINTING ORIGINAL DF SHAPE:")
-    print(df.shape)
+
     # slice the df based on the strike price
     df = slice_df(df, nifty_futures)
-    print("****PRINTING SLICED DF SHAPE****")
-    print(df.shape)
 
-    print("SAVING RAW DATA AFTER SLICING")
+    # print("SAVING RAW DATA AFTER SLICING")
     df.to_csv("raw_data_0.csv")
 
-    st.dataframe(df)
-
+    st.write("Raw Data Fetched")
     # wait for 4 minutes
-    tm.sleep(20)
+    
+    # check end time
+    time_end = datetime.datetime.now()
+
+    print(f"Time taken to fetch raw data: {time_end - time_start}")
+    print(f"Waiting 30 seconds")
+    tm.sleep(30)
 
     counter = 1
+
+    with st.empty():
+        while is_time_between(time(0,2), time(12,19)):
+            time_start = datetime.time.now()
+            # get the current nifty futures value
+            page_driver, nifty_futures = get_nifty_futures(page_driver)
+            print(f"NIFTY VALUE: {nifty_futures}")
+
+            # find and return the data
+            # print("SHOULD PRESS BUTTON NOW")
+            page_driver, data_list = find_and_return_table_no_button(page_driver)
+            df_1 = build_dataframe(data_list)
+
+            # slice the dataframe based on nifty
+            df_1 = slice_df(df_1, nifty_futures)
+
+            # save to csv
+            filename = f"raw_data_{counter}.csv"
+            df_1.to_csv(filename)
+
+            # append to master df
+            all_data = pd.concat([df, df_1], ignore_index = True)
+            changes = calculate_roc(all_data)
+            #TODO new below
+            #changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
+
+            
+
+            # set roc time
+            unique_times = all_data['time'].unique()
+            earlier_time = min(unique_times)
+            all_data = all_data[all_data['time'] != earlier_time]
+
+            # concat dfs
+            df_roc = pd.concat([df_roc, changes], ignore_index = True)
+            st.write(f"ROC update: {counter}")
+            # put in ascending order of strike price and time
+            df_roc = df_roc.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
+
+            # save df
+            df_roc.to_csv("rates_of_change.csv")
+            print(df_roc)
+
+            #if counter is 1: just output the original changes df
+            if counter == 1:
+                st.write(f"Printing change {counter}")
+            
+                # List of columns to apply the style
+                columns_to_style = [
+                    'change_volume_calls',
+                    'change_oi_lakhs_calls',
+                    'change_ltp_calls',
+                    'change_volume_puts',
+                    'change_oi_lakhs_puts',
+                    'change_ltp_puts'
+                ]
+                st.write(f"ROC shape: {df_roc.shape}")
+
+                # Apply the style only to the specified columns
+                s2 = df_roc.style.applymap(lambda x: style_pos_neg(x, pos='color:white;background-color:darkgreen', neg='color:white;background-color:red'),
+                                            subset=columns_to_style)
     
-    while is_time_between(time(0,2), time(19,34)):
-        #TODO THIS IS NEW *****
-        # enter the webpage first
-        #page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
-        #login()
+                # Display the styled dataframe
+                dataa = st.dataframe(s2, height=900)
 
-        #tm.sleep(20)
+            elif counter > 1:
+                # List of columns to apply the style
+                columns_to_style = [
+                    'change_volume_calls',
+                    'change_oi_lakhs_calls',
+                    'change_ltp_calls',
+                    'change_volume_puts',
+                    'change_oi_lakhs_puts',
+                    'change_ltp_puts'
+                ]
 
-        # get the current nifty futures value
-        page_driver, nifty_futures = get_nifty_futures(page_driver)
-        print(f"NIFTY VALUE: {nifty_futures}")
+                # Apply the style only to the specified columns
+                s2 = df_roc.style.applymap(lambda x: style_pos_neg(x, pos='color:white;background-color:darkgreen', neg='color:white;background-color:red'),
+                                            subset=columns_to_style)
 
-        # find and return the data
-        print("SHOULD PRESS BUTTON NOW")
-        page_driver, data_list = find_and_return_table_no_button(page_driver)
-        df_1 = build_dataframe(data_list)
+                # Display the styled dataframe
+                dataa = st.dataframe(s2, height=900)
 
-        # print original dataframe
-        print("****PRINTING SHAPE DF TO BE SLICED******")
-        print(df_1.shape)
+            
+            # print time
+            now = datetime.now(IST)
 
-        # slice the dataframe based on nifty
-        df_1 = slice_df(df_1, nifty_futures)
+            print(f"Update {counter}: Changes saved for {now} ")
 
-        # print sliced df as a sanity check
-        print("*****PRINTING SLICED DF SHAPE******")
-        print(df_1.shape)
+            # update counter
+            counter+=1
 
-        # save to csv
-        filename = f"raw_data_{counter}.csv"
-        df_1.to_csv(filename)
+            # create a copy of the second dataframe to assign it to the earlier one
+            df = df_1.copy()
+            del df_1
 
-        # append to master df
-        all_data = pd.concat([df, df_1], ignore_index = True)
-        changes = calculate_roc(all_data)
-        
+            time_end = datetime.datetime.now()
+            print(f"Time taken: {time_end - time_start}")
 
-        # set roc time
-        unique_times = all_data['time'].unique()
-        earlier_time = min(unique_times)
-        all_data = all_data[all_data['time'] != earlier_time]
-
-#TODO UNCOMMENT!!
-        #if counter is 1: just output the original changes df
-        if counter == 1:
-            st.write(f"Printing change {counter}")
-            changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
-            dataa = st.dataframe(changes, height = 100)
-            #dataa = st.dataframe(changes, height = len(changes))
-
-        elif counter > 1:
-            # append the changes to the master changes df
-            st.write(f"Printing change {counter}")
-            dataa.add_rows(changes)
-        
-        # concat dfs
-        df_roc = pd.concat([df_roc, changes], ignore_index = True)
-
-        # put in ascending order of strike price and time
-        df_roc = df_roc.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
-
-        # save df
-        df_roc.to_csv("rates_of_change.csv")
-        print(df_roc)
-        # print time
-        now = datetime.now(IST)
-
-        print(f"Update {counter}: Changes saved for {now} ")
-
-        # update counter
-        counter+=1
-
-        # create a copy of the second dataframe to assign it to the earlier one
-        df = df_1.copy()
-        del df_1
-
-        # TODO
-        # chnge to 3 mins?
-        tm.sleep(20)
+            # TODO
+            # chnge to 3 mins?
+            tm.sleep(30)
     
     # shut the virtual display
     disp.stop()
 
-    # 
     # quit the driver
     page_driver.quit()
 
     # return the df
     return
 
+
 if __name__ == '__main__':
     main()
-        
-           
-        
     
-
-
