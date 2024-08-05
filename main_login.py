@@ -467,7 +467,7 @@ def main():
     # initialise df to hold all the data
     df_roc = pd.DataFrame()
 
-    time_start = datetime.datetime.now()
+    time_start = datetime.now()
 
     # initialise data
     page_driver, data_list = find_and_return_table(page_driver)
@@ -485,7 +485,7 @@ def main():
     # wait for 4 minutes
     
     # check end time
-    time_end = datetime.datetime.now()
+    time_end = datetime.now()
 
     print(f"Time taken to fetch raw data: {time_end - time_start}")
     print(f"Waiting 30 seconds")
@@ -494,8 +494,8 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(12,31)):
-            time_start = datetime.time.now()
+        while is_time_between(time(0,2), time(12,39)):
+            time_start = datetime.now()
             # get the current nifty futures value
             page_driver, nifty_futures = get_nifty_futures(page_driver)
             print(f"NIFTY VALUE: {nifty_futures}")
@@ -588,7 +588,7 @@ def main():
             df = df_1.copy()
             del df_1
 
-            time_end = datetime.datetime.now()
+            time_end = datetime.now()
             print(f"Time taken: {time_end - time_start}")
 
             # TODO
