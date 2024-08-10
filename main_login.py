@@ -26,7 +26,7 @@ def enter_webpage(link):
     cd_path = Service('./chromedriver')
     # TODO where does this go??
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--no-sandbox")
@@ -56,21 +56,19 @@ def enter_webpage(link):
 
 def get_nifty_futures(driver):
     # div holding nifty 50 futures value
-    futures_element = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/header/div/div[1]/div/div/div/div[1]'
+    # futures_element = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/header/div/div[1]/div/div/div/div[1]'
+    futures_element = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/header/div/div[1]/div/div/div/div[1]/span[2]'
 
     # find div
     nifty = driver.find_element(By.XPATH, futures_element).text
-
-    # split text to isolate nifty value
-    nifty_text = nifty.split()[2]
     try:
         # convert to float
-        nifty_float = float(nifty_text)
+        nifty_float = float(nifty)
     except ValueError:
         print("Error! Nifty value can't be found or can't be converted to float")
     
     # driver.close()
-    return driver, nifty_float    
+    return driver, nifty_float 
 
 def click_button():
     st.session_state.clicked = True
