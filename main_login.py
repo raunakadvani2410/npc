@@ -388,10 +388,11 @@ def calculate_roc(df):
 def is_time_between(begin_time, end_time, check_time=None):
     # If check time is not given, default to current time
     if check_time is None:
-        #IST = pytz.timezone('Asia/Kolkata') 
+        IST = pytz.timezone('Asia/Kolkata') 
+        
         # get the current datetime
-        #check_time = datetime.now(IST).time()
-        check_time = datetime.now().time()
+        check_time = datetime.now(IST).time()
+        #check_time = datetime.now().time()
     return begin_time <= check_time <= end_time
 
 def style_pos_neg(v, pos='', neg = ''):
@@ -494,7 +495,7 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(12,46)):
+        while is_time_between(time(0,2), time(20,59)):
             time_start = datetime.now()
             # get the current nifty futures value
             page_driver, nifty_futures = get_nifty_futures(page_driver)
