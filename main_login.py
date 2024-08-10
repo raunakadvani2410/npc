@@ -444,19 +444,19 @@ def main():
     st.write("Entering Sensibull webpage...")
     page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
     
-    # # login
-    # st.write("Entering login credentials...")
-    # page_driver = login(page_driver)
-    # st.write("OTP sent, enter in app now")
-    # #otp = input("Enter OTP")
+    # login
+    st.write("Entering login credentials...")
+    page_driver = login(page_driver)
+    st.write("OTP sent, enter in app now")
+    #otp = input("Enter OTP")
 
 
-    # otp = get_otp_from_flask()
-    # print(f"OTP RECEIVED: {otp}")
-    # # tm.sleep(20)
+    otp = get_otp_from_flask()
+    print(f"OTP RECEIVED: {otp}")
+    # tm.sleep(20)
 
-    # page_driver = submit_otp(page_driver, otp)
-    # st.write("OTP submitted, proceeding")
+    page_driver = submit_otp(page_driver, otp)
+    st.write("OTP submitted, proceeding")
 
     tm.sleep(15)
     page_driver, nifty_futures = get_nifty_futures(page_driver)
