@@ -433,16 +433,14 @@ def main():
     # login
     st.write("Entering login credentials...")
     page_driver = login(page_driver)
-    st.write("OTP sent, enter in app now")
+    st.write("OTP sent, enter in website now")
     #otp = input("Enter OTP")
 
 
     otp = get_otp_from_flask()
-    print(f"OTP RECEIVED: {otp}")
     # tm.sleep(20)
 
     page_driver = submit_otp(page_driver, otp)
-    st.write("OTP submitted, proceeding")
 
     tm.sleep(10)
     page_driver, data_list = find_and_return_table(page_driver)
@@ -482,7 +480,7 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(7,57)):
+        while is_time_between(time(0,2), time(8,35)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
