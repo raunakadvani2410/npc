@@ -16,15 +16,15 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import streamlit as st
 import pytz
+import yfinance as yf
 import requests
 from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
-    #cd_path2 = "/Users/raunakadvani/Desktop/2023-2024/Finances/nifty_puts_calls/npc/chromedriver"
-    #cd_path = "./chromedriver"
     cd_path = Service('./chromedriver')
-    # TODO where does this go??
+    
+    # set chrome options
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=1920,1080")
@@ -34,14 +34,7 @@ def enter_webpage(link):
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
     driver = webdriver.Chrome(service=cd_path, options= chrome_options)
-    #driver = webdriver.Chrome("./chromedriver", options = chrome_options)
-    #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options = chrome_options)
-    #driver = webdriver.Chrome(options = chrome_options)
 
-   # driver = webdriver.Remote(
-   #         command_executor = 'http://172.31.9.13:4444/wd/hub',
-   #         options = chrome_options
-   #         )
     # Open the website
     driver.get(link) 
 
@@ -57,10 +50,12 @@ def enter_webpage(link):
 def get_nifty_futures(driver):
     # div holding nifty 50 futures value
     # futures_element = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/header/div/div[1]/div/div/div/div[1]'
-    futures_element = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/header/div/div[1]/div/div/div/div[1]/span[2]'
+    futures_element = '/html/body/div[1]/div/div[3]/div[2]/div/div/header/div/div[1]/div/div/div'
+    # futures_element = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/header/div/div[1]/div/div/div/div[1]/span[2]'
 
     # find div
     nifty = driver.find_element(By.XPATH, futures_element).text
+    nifty_float = None
     try:
         # convert to float
         nifty_float = float(nifty)
@@ -69,10 +64,6 @@ def get_nifty_futures(driver):
     
     # driver.close()
     return driver, nifty_float 
-
-def click_button():
-    st.session_state.clicked = True
-    print("Session State Changed")
 
 def login(driver):
     # set xpath for login button
@@ -174,9 +165,9 @@ def otp_form(driver):
 def find_and_return_table(driver):
 
     # set xpath for select all columns button
-    button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]'
+    # button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]'
+    button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/footer/div[1]/button[2]'
     # //*[@id="app"]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]
-
     try:
         # find select all columns button
         l = driver.find_element(By.XPATH, button_x_path)
@@ -188,7 +179,8 @@ def find_and_return_table(driver):
         print("Button not found, moving on.")
 
     # set xpath for div that contains data
-    x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
+    x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
+    # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
 
     # sleep for 3 seconds
     tm.sleep(3)
@@ -199,19 +191,21 @@ def find_and_return_table(driver):
     # # sleep for 3 seconds
     # tm.sleep(3)
 
-    for data in table_data:
-        data_list = data.text.split()
+    # for data in table_data:
+        # data_list = data.text.split()
 
+    data_list = [data.text.split() for data in table_data]
     # close tab
     # TODO will have to keep open?
     #driver.close()
     
     # return the table element
-    return driver, data_list
+    return driver, data_list[0]
 
 def find_and_return_table_no_button(driver):
     # set xpath for div that contains data
-    x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
+    # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
+    x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
 
     # sleep for 3 seconds
     tm.sleep(3)
@@ -219,18 +213,13 @@ def find_and_return_table_no_button(driver):
     # find table element
     table_data = driver.find_elements(By.XPATH, x_path)
 
-    # # sleep for 3 seconds
-    # tm.sleep(3)
+    # for data in table_data:
+    #     data_list = data.text.split()
 
-    for data in table_data:
-        data_list = data.text.split()
+    data_list = [data.text.split() for data in table_data]
 
-    # close tab
-    # TODO will have to keep open?
-    #driver.close()
-    
     # return the table element
-    return driver, data_list
+    return driver, data_list[0]
 
 
 def build_dataframe(data_list):
@@ -238,27 +227,25 @@ def build_dataframe(data_list):
     IST = pytz.timezone('Asia/Kolkata') 
 
     # get the current datetime
-    #now = datetime.now(IST)
     dt_string = datetime.now(IST).strftime("%d/%m/%Y %H:%M:%S")
 
     # reshape the data into rows of 33 elements
-    rows = [data_list[i:i+33] for i in range(0, len(data_list), 33)]
+    rows = [data_list[i:i+28] for i in range(0, len(data_list), 28)]
 
     # column names and corresponding indices
-    # 17,18, 22, 23
     columns = {
-        'volume_calls': 6,
-        'oi_change_calls': 7,
-        'oi_change_pct_calls': 8,
-        'oi_lakhs_calls': 9,
-        'ltp_calls': 15,
-        'strike_price': 16,
-        'iv': 17,
-        'ltp_puts': 18,
-        'oi_lakh_puts': 24,
-        'oi_change_pct_puts': 25,
-        'oi_change_puts': 26,
-        'volume_puts': 27,
+        'volume_calls': 5,
+        'oi_change_calls': 6,
+        'oi_change_pct_calls': 7,
+        'oi_lakhs_calls': 8,
+        'ltp_calls': 11,
+        'strike_price': 13,
+        'iv': 14,
+        'ltp_puts': 16,
+        'oi_lakh_puts': 20,
+        'oi_change_pct_puts': 21,
+        'oi_change_puts': 22,
+        'volume_puts': 23,
     }
 
     # initialize a list to store the rows of the DataFrame
@@ -266,9 +253,6 @@ def build_dataframe(data_list):
 
     # process each row
     for i, row in enumerate(rows):
-        # print(f"Row {i+1} length: {len(row)}")
-        # print(row)  # Print the row to see its content
-
         df_row = {}
         for column, index in columns.items():
             try:
@@ -314,6 +298,8 @@ def get_remarks_calls(row):
         return "Short Buildup"
     elif row['change_oi_lakhs_calls'] < 0 and row['change_ltp_calls'] < 0:
         return "Long Unwinding"
+    elif row['change_oi_lakhs_calls'] > 0 and row['change_ltp_calls'] > 0:
+        return "Long Buildup"
     else:
         return "NA"
     
@@ -325,6 +311,8 @@ def get_remarks_puts(row):
         return "Short Buildup"
     elif row['change_oi_lakhs_puts'] < 0 and row['change_ltp_puts'] < 0:
         return "Long Unwinding"
+    elif row['change_oi_lakhs_calls'] > 0 and row['change_ltp_calls'] > 0:
+        return "Long Buildup"
     else:
         return "NA"
 
@@ -411,11 +399,6 @@ def get_otp_from_flask():
             response = requests.get(url)
             print(type(response))
             if response.status_code == 200:
-                # data = response.json()
-                # otp = data.get('otp', None)
-                # otp = response
-
-
                 data = response.json()
                 otp = data.get('otp')
                 print(f"Retrieved OTP: {otp}")
@@ -425,7 +408,7 @@ def get_otp_from_flask():
     return otp
 
 def main():
-    #lll
+    # turn on virtual display
     disp = Display()
     disp.start()
 
@@ -458,18 +441,22 @@ def main():
     page_driver = submit_otp(page_driver, otp)
     st.write("OTP submitted, proceeding")
 
-    tm.sleep(15)
-    page_driver, nifty_futures = get_nifty_futures(page_driver)
+    tm.sleep(10)
+    page_driver, data_list = find_and_return_table(page_driver)
 
-    # print(f"Original NIFTY VALUE: {nifty_futures}")
+
+    # fetching Nifty 50 data
+    nifty = yf.Ticker("^NSEI")
+
+    # get the latest market price
+    nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
+
 
     # initialise df to hold all the data
     df_roc = pd.DataFrame()
 
     time_start = datetime.now()
 
-    # initialise data
-    page_driver, data_list = find_and_return_table(page_driver)
 
     # build the dataframe from the list
     df = build_dataframe(data_list)
@@ -481,7 +468,6 @@ def main():
     df.to_csv("raw_data_0.csv")
 
     st.write("Raw Data Fetched")
-    # wait for 4 minutes
     
     # check end time
     time_end = datetime.now()
@@ -493,11 +479,14 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(20,59)):
+        while is_time_between(time(0,2), time(7,50)):
             time_start = datetime.now()
             # get the current nifty futures value
-            page_driver, nifty_futures = get_nifty_futures(page_driver)
-            print(f"NIFTY VALUE: {nifty_futures}")
+            # fetching Nifty 50 data
+            nifty = yf.Ticker("^NSEI")
+
+            # get the latest market price
+            nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
 
             # find and return the data
             # print("SHOULD PRESS BUTTON NOW")
@@ -514,10 +503,6 @@ def main():
             # append to master df
             all_data = pd.concat([df, df_1], ignore_index = True)
             changes = calculate_roc(all_data)
-            #TODO new below
-            #changes = changes.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
-
-            
 
             # set roc time
             unique_times = all_data['time'].unique()
