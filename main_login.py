@@ -482,7 +482,7 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(7,55)):
+        while is_time_between(time(0,2), time(7,57)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
