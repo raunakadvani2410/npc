@@ -257,7 +257,10 @@ def build_dataframe(data_list):
         for column, index in columns.items():
             try:
                 value = row[index].replace('%', '')
-                df_row[column] = float(value)
+                if column == 'strike_price':
+                    df_row[column] = int(float(value))  
+                else:
+                    df_row[column] = float(value)
             except (ValueError, IndexError):
                 df_row[column] = np.nan  # Replace problematic values with NaN
 
@@ -479,7 +482,7 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(7,50)):
+        while is_time_between(time(0,2), time(7,55)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
