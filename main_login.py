@@ -123,7 +123,6 @@ def submit_otp(driver, otp):
     try:
         #tm.sleep(20)
         # ID for OTP
-        print(f"Submitting OTP {otp} {type(otp)}")
         otp_input = driver.find_element(By.ID, 'userid')
         otp_input.send_keys(otp)
 
@@ -137,29 +136,25 @@ def submit_otp(driver, otp):
         st.error(f"An error occurred: {e}")
     return driver  
 
+def get_otp_from_flask():
+    # wait for user to input otp
+    otp = None
+    while otp is None:
+        try:
+            tm.sleep(15)
 
-# OTP Form Handling with Streamlit
-def otp_form(driver):
-    with st.form(key='otp_form'):
-        otp = st.text_input("Enter the OTP sent")
-        submit = st.form_submit_button('Submit')
+            # URL to get the OTP
+            url = 'https://raunakadvani.pythonanywhere.com/get_otp'
 
-        if submit:
-            if otp.isnumeric() and len(otp) == 6:
-                try:
-                    login_otp = driver.find_element(By.ID, 'userid')
-                    login_otp.send_keys("123456")
-
-                    continue_button_x_path = '//*[@id="container"]/div[2]/div/div[2]/form/div[2]/button'
-                    cb = driver.find_element(By.XPATH, continue_button_x_path)
-                    driver.execute_script("arguments[0].click();", cb)
-
-                    st.write("OTP entered successfully")
-                    tm.sleep(2)
-                except Exception as e:
-                    st.error(f"An error occurred: {e}")
-            else:
-                st.error("Invalid input. The OTP must be numeric and 6 digits long.")
+            # Send a GET request to retrieve the OTP
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                otp = data.get('otp')
+        except requests.exceptions.RequestException as e:
+            st.write("Error contacting flask app", e)
+            tm.sleep(10)
+    return otp
 
 
 def find_and_return_table(driver):
@@ -192,9 +187,13 @@ def find_and_return_table(driver):
     # tm.sleep(3)
 
     # for data in table_data:
-        # data_list = data.text.split()
+    #     data_list1 = data.text.split()
+
+    # print(f"Type using for loop: {type(data_list1)}")
+    # print(f"Length using for loop: {len(data_list1)}")
 
     data_list = [data.text.split() for data in table_data]
+
     # close tab
     # TODO will have to keep open?
     #driver.close()
@@ -227,7 +226,8 @@ def build_dataframe(data_list):
     IST = pytz.timezone('Asia/Kolkata') 
 
     # get the current datetime
-    dt_string = datetime.now(IST).strftime("%d/%m/%Y %H:%M:%S")
+    # dt_string = datetime.now(IST).strftime("%d/%m/%Y %H:%M:%S")
+    dt_string = datetime.now(IST).strftime("%H:%M")
 
     # reshape the data into rows of 33 elements
     rows = [data_list[i:i+28] for i in range(0, len(data_list), 28)]
@@ -239,7 +239,7 @@ def build_dataframe(data_list):
         'oi_change_pct_calls': 7,
         'oi_lakhs_calls': 8,
         'ltp_calls': 11,
-        'strike_price': 13,
+        'Strike Price': 13,
         'iv': 14,
         'ltp_puts': 16,
         'oi_lakh_puts': 20,
@@ -257,7 +257,7 @@ def build_dataframe(data_list):
         for column, index in columns.items():
             try:
                 value = row[index].replace('%', '')
-                if column == 'strike_price':
+                if column == 'Strike Price':
                     df_row[column] = int(float(value))  
                 else:
                     df_row[column] = float(value)
@@ -282,9 +282,9 @@ def slice_df(df, nifty_futures):
 
     # calculate the strike prices to keep
     strike_prices_to_keep = [central_strike + i * 100 for i in range(-4, 4)]
-
+    print(strike_prices_to_keep)
     # filter the dataframe
-    df = df[df['strike_price'].isin(strike_prices_to_keep)]
+    df = df[df['Strike Price'].isin(strike_prices_to_keep)]
 
     # reset index and remove index column
     df = df.reset_index(drop = True)
@@ -295,26 +295,26 @@ def slice_df(df, nifty_futures):
 
 # Add remarks_calls column based on conditions
 def get_remarks_calls(row):
-    if row['change_oi_lakhs_calls'] < 0 and row['change_ltp_calls'] > 0:
+    if row['OI Lakhs (Calls)'] < 0 and row['LTP (Calls)'] > 0:
         return "Short Covering"
-    elif row['change_oi_lakhs_calls'] > 0 and row['change_ltp_calls'] < 0:
+    elif row['OI Lakhs (Calls)'] > 0 and row['LTP (Calls)'] < 0:
         return "Short Buildup"
-    elif row['change_oi_lakhs_calls'] < 0 and row['change_ltp_calls'] < 0:
+    elif row['OI Lakhs (Calls)'] < 0 and row['LTP (Calls)'] < 0:
         return "Long Unwinding"
-    elif row['change_oi_lakhs_calls'] > 0 and row['change_ltp_calls'] > 0:
+    elif row['OI Lakhs (Calls)'] > 0 and row['LTP (Calls)'] > 0:
         return "Long Buildup"
     else:
         return "NA"
     
 # Add remarks_puts column based on conditions
 def get_remarks_puts(row):
-    if row['change_oi_lakhs_puts'] < 0 and row['change_ltp_puts'] > 0:
+    if row['OI Lakhs (Puts)'] < 0 and row['LTP (Puts)'] > 0:
         return "Short Covering"
-    elif row['change_oi_lakhs_puts'] > 0 and row['change_ltp_puts'] < 0:
+    elif row['OI Lakhs (Puts)'] > 0 and row['LTP (Puts)'] < 0:
         return "Short Buildup"
-    elif row['change_oi_lakhs_puts'] < 0 and row['change_ltp_puts'] < 0:
+    elif row['OI Lakhs (Puts)'] < 0 and row['LTP (Puts)'] < 0:
         return "Long Unwinding"
-    elif row['change_oi_lakhs_calls'] > 0 and row['change_ltp_calls'] > 0:
+    elif row['OI Lakhs (Puts)'] > 0 and row['LTP (Puts)'] > 0:
         return "Long Buildup"
     else:
         return "NA"
@@ -322,11 +322,13 @@ def get_remarks_puts(row):
 # calculate rate of change
 def calculate_roc(df):
     # convert to datetime format
-    df['time'] = pd.to_datetime(df['time'], format="%d/%m/%Y %H:%M:%S")
+    # df['time'] = pd.to_datetime(df['time'], format="%d/%m/%Y %H:%M:%S")
+    df['time'] = pd.to_datetime(df['time'], format="%H:%M").dt.time
+    # df['time'] = pd.to_datetime(df['time'])
     df.drop(["oi_change_calls", "oi_change_pct_calls", "oi_change_pct_puts", "oi_change_puts"], axis = 1, inplace = True)
 
     # group by strike price
-    grouped = df.groupby('strike_price')
+    grouped = df.groupby('Strike Price')
     
     df_roc_list = []
     for strike_price, group in grouped:
@@ -334,7 +336,7 @@ def calculate_roc(df):
         group_roc = group.copy()
         
         for column in group.columns:
-            if column not in ['strike_price', 'time', 'oi_change_pct_puts', 'oi_change_pct_calls']:
+            if column not in ['Strike Price', 'time', 'oi_change_pct_puts', 'oi_change_pct_calls']:
                 # calculate the roc
                 group_roc[column] = round(group[column].diff(),2)
         
@@ -354,23 +356,23 @@ def calculate_roc(df):
 
     df_roc = pd.concat(df_roc_list, ignore_index=True)
     df_roc.rename(columns = {
-        "volume_calls":"change_volume_calls",
-        "oi_lakhs_calls":"change_oi_lakhs_calls",
-        "ltp_calls":"change_ltp_calls",
-        "iv":"change_iv",
-        "ltp_puts":"change_ltp_puts",
-        "oi_lakh_puts":"change_oi_lakhs_puts",
-        "volume_puts":"change_volume_puts",
-        "time":"time_roc"
+        "volume_calls":"Volume (calls)",
+        "oi_lakhs_calls":"OI Lakhs (Calls)",
+        "ltp_calls":"LTP (Calls)",
+        "iv":"IV",
+        "ltp_puts":"LTP (Puts)",
+        "oi_lakh_puts":"OI Lakhs (Puts)",
+        "volume_puts":"Volume (puts)",
+        "time":"Time (ROC)"
     }, inplace=True)
 
     # add remarks    
-    df_roc['remarks_calls'] = df_roc.apply(get_remarks_calls, axis=1)
-    df_roc['remarks_puts'] = df_roc.apply(get_remarks_puts, axis=1) 
+    df_roc['Remarks (Calls)'] = df_roc.apply(get_remarks_calls, axis=1)
+    df_roc['Remarks (Puts)'] = df_roc.apply(get_remarks_puts, axis=1) 
 
     # rearrange columns
-    df_roc = df_roc.reindex(columns = ['remarks_calls', 'change_volume_calls', 'change_oi_lakhs_calls', 'change_ltp_calls','change_iv',
-                                       'strike_price', 'change_volume_puts', 'change_oi_lakhs_puts', 'change_ltp_puts', 'remarks_puts', 'time_roc'])
+    df_roc = df_roc.reindex(columns = ['Remarks (Calls)', 'Volume (calls)', 'OI Lakhs (Calls)', 'LTP (Calls)','IV',
+                                       'Strike Price', 'Volume (puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)', 'Time (ROC)'])
 
     return df_roc
 
@@ -388,28 +390,6 @@ def style_pos_neg(v, pos='', neg = ''):
     return pos if v > 0 else neg if v < 0 else None
 
 
-def get_otp_from_flask():
-    # wait for user to input otp
-    otp = None
-    while otp is None:
-        try:
-            tm.sleep(15)
-
-            # URL to get the OTP
-            url = 'https://raunakadvani.pythonanywhere.com/get_otp'
-
-            # Send a GET request to retrieve the OTP
-            response = requests.get(url)
-            print(type(response))
-            if response.status_code == 200:
-                data = response.json()
-                otp = data.get('otp')
-                print(f"Retrieved OTP: {otp}")
-        except requests.exceptions.RequestException as e:
-            st.write("Error contacting flask app", e)
-            tm.sleep(10)
-    return otp
-
 def main():
     # turn on virtual display
     disp = Display()
@@ -420,8 +400,6 @@ def main():
     IST = pytz.timezone('Asia/Kolkata') 
 
     now = datetime.now(IST)
-
-    proceed = False
 
     # insert title
     st.title("Option Chain ROC")
@@ -434,8 +412,6 @@ def main():
     st.write("Entering login credentials...")
     page_driver = login(page_driver)
     st.write("OTP sent, enter in website now")
-    #otp = input("Enter OTP")
-
 
     otp = get_otp_from_flask()
     # tm.sleep(20)
@@ -445,19 +421,17 @@ def main():
     tm.sleep(10)
     page_driver, data_list = find_and_return_table(page_driver)
 
-
+    #return
     # fetching Nifty 50 data
     nifty = yf.Ticker("^NSEI")
 
     # get the latest market price
     nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
 
-
     # initialise df to hold all the data
     df_roc = pd.DataFrame()
 
     time_start = datetime.now()
-
 
     # build the dataframe from the list
     df = build_dataframe(data_list)
@@ -474,13 +448,12 @@ def main():
     time_end = datetime.now()
 
     print(f"Time taken to fetch raw data: {time_end - time_start}")
-    print(f"Waiting 30 seconds")
-    tm.sleep(30)
+    tm.sleep(10)
 
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(8,35)):
+        while is_time_between(time(0,2), time(9,5)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
@@ -514,7 +487,7 @@ def main():
             df_roc = pd.concat([df_roc, changes], ignore_index = True)
             st.write(f"ROC update: {counter}")
             # put in ascending order of strike price and time
-            df_roc = df_roc.sort_values(['strike_price', 'time_roc'], ascending=[True, True])
+            df_roc = df_roc.sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, True])
 
             # save df
             df_roc.to_csv("rates_of_change.csv")
@@ -526,12 +499,12 @@ def main():
             
                 # List of columns to apply the style
                 columns_to_style = [
-                    'change_volume_calls',
-                    'change_oi_lakhs_calls',
-                    'change_ltp_calls',
-                    'change_volume_puts',
-                    'change_oi_lakhs_puts',
-                    'change_ltp_puts'
+                    'Volume (calls)',
+                    'OI Lakhs (Calls)',
+                    'LTP (Calls)',
+                    'Volume (puts)',
+                    'OI Lakhs (Puts)',
+                    'LTP (Puts)'
                 ]
                 st.write(f"ROC shape: {df_roc.shape}")
 
@@ -545,12 +518,12 @@ def main():
             elif counter > 1:
                 # List of columns to apply the style
                 columns_to_style = [
-                    'change_volume_calls',
-                    'change_oi_lakhs_calls',
-                    'change_ltp_calls',
-                    'change_volume_puts',
-                    'change_oi_lakhs_puts',
-                    'change_ltp_puts'
+                    'Volume (calls)',
+                    'OI Lakhs (Calls)',
+                    'LTP (Calls)',
+                    'Volume (puts)',
+                    'OI Lakhs (Puts)',
+                    'LTP (Puts)'
                 ]
 
                 # Apply the style only to the specified columns
@@ -580,9 +553,11 @@ def main():
             # chnge to 3 mins?
             tm.sleep(30)
     
+    st.write("Ending Program Now")
     # shut the virtual display
     disp.stop()
 
+    print("Quiting driver now")
     # quit the driver
     page_driver.quit()
 
