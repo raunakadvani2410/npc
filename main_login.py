@@ -461,7 +461,7 @@ def main():
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(9,25)):
+        while is_time_between(time(0,2), time(15,30)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
