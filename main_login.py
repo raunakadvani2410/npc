@@ -18,7 +18,8 @@ import streamlit as st
 import pytz
 import yfinance as yf
 import requests
-from pyvirtualdisplay import Display
+import logging
+# from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
@@ -60,7 +61,7 @@ def get_nifty_futures(driver):
         # convert to float
         nifty_float = float(nifty)
     except ValueError:
-        print("Error! Nifty value can't be found or can't be converted to float")
+        logging.warning("Error! Nifty value can't be found or can't be converted to float")
     
     # driver.close()
     return driver, nifty_float 
@@ -171,7 +172,7 @@ def find_and_return_table(driver):
         driver.execute_script("arguments[0].click();", l);
     
     except NoSuchElementException:
-        print("Button not found, moving on.")
+        logging.info("Button not found, moving on.")
 
     # set xpath for div that contains data
     x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
@@ -282,7 +283,7 @@ def slice_df(df, nifty_futures):
 
     # calculate the strike prices to keep
     strike_prices_to_keep = [central_strike + i * 100 for i in range(-4, 4)]
-    print(strike_prices_to_keep)
+    #print(strike_prices_to_keep)
     # filter the dataframe
     df = df[df['Strike Price'].isin(strike_prices_to_keep)]
 
@@ -356,23 +357,26 @@ def calculate_roc(df):
 
     df_roc = pd.concat(df_roc_list, ignore_index=True)
     df_roc.rename(columns = {
-        "volume_calls":"Volume (calls)",
+        "volume_calls":"Volume (Calls)",
         "oi_lakhs_calls":"OI Lakhs (Calls)",
         "ltp_calls":"LTP (Calls)",
         "iv":"IV",
         "ltp_puts":"LTP (Puts)",
         "oi_lakh_puts":"OI Lakhs (Puts)",
-        "volume_puts":"Volume (puts)",
+        "volume_puts":"Volume (Puts)",
         "time":"Time (ROC)"
     }, inplace=True)
 
     # add remarks    
     df_roc['Remarks (Calls)'] = df_roc.apply(get_remarks_calls, axis=1)
-    df_roc['Remarks (Puts)'] = df_roc.apply(get_remarks_puts, axis=1) 
+    df_roc['Remarks (Puts)'] = df_roc.apply(get_remarks_puts, axis=1)
+    df_roc['COI/VOL (Calls)'] = df_roc['OI Lakhs (Calls)']/df_roc['Volume (Calls)']
+    df_roc['COI/VOL (Puts)'] = df_roc['OI Lakhs (Puts)']/df_roc['Volume (Puts)']
+
 
     # rearrange columns
-    df_roc = df_roc.reindex(columns = ['Remarks (Calls)', 'Volume (calls)', 'OI Lakhs (Calls)', 'LTP (Calls)','IV',
-                                       'Strike Price', 'Volume (puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)', 'Time (ROC)'])
+    df_roc = df_roc.reindex(columns = ['Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)','IV', 'COI/VOL (Calls)',
+                                       'Strike Price', 'COI/VOL (Puts)', 'Volume (Puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)', 'Time (ROC)'])
 
     return df_roc
 
@@ -392,8 +396,12 @@ def style_pos_neg(v, pos='', neg = ''):
 
 def main():
     # turn on virtual display
-    disp = Display()
-    disp.start()
+    # disp = Display()
+    # disp.start()
+
+    # set up logging
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
 
     # set wide layout by default
     st.set_page_config(layout="wide")
@@ -443,17 +451,17 @@ def main():
     df.to_csv("raw_data_0.csv")
 
     st.write("Raw Data Fetched")
-    
+
     # check end time
     time_end = datetime.now()
 
-    print(f"Time taken to fetch raw data: {time_end - time_start}")
+    #print(f"Time taken to fetch raw data: {time_end - time_start}")
     tm.sleep(10)
 
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(9,46)):
+        while is_time_between(time(0,2), time(9,25)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
@@ -491,73 +499,52 @@ def main():
 
             # save df
             df_roc.to_csv("rates_of_change.csv")
-            print(df_roc)
 
-            #if counter is 1: just output the original changes df
-            if counter == 1:
-                st.write(f"Printing change {counter}")
-            
-                # List of columns to apply the style
-                columns_to_style = [
-                    'Volume (calls)',
-                    'OI Lakhs (Calls)',
-                    'LTP (Calls)',
-                    'Volume (puts)',
-                    'OI Lakhs (Puts)',
-                    'LTP (Puts)'
-                ]
-                st.write(f"ROC shape: {df_roc.shape}")
+            st.write(f"Printing change {counter}")
+        
+            # List of columns to apply the style
+            columns_to_style = [
+                'Volume (Calls)',
+                'OI Lakhs (Calls)',
+                'LTP (Calls)',
+                'Volume (Puts)',
+                'OI Lakhs (Puts)',
+                'LTP (Puts)'
+            ]
+            # st.write(f"ROC shape: {df_roc.shape}")
 
-                # Apply the style only to the specified columns
-                s2 = df_roc.style.applymap(lambda x: style_pos_neg(x, pos='color:white;background-color:darkgreen', neg='color:white;background-color:red'),
-                                            subset=columns_to_style)
-    
-                # Display the styled dataframe
-                dataa = st.dataframe(s2, height=900)
+            # Apply the style only to the specified columns
+            s2 = df_roc.style.applymap(lambda x: style_pos_neg(x, pos='color:white;background-color:darkgreen', neg='color:white;background-color:red'),
+                                        subset=columns_to_style)
 
-            elif counter > 1:
-                # List of columns to apply the style
-                columns_to_style = [
-                    'Volume (calls)',
-                    'OI Lakhs (Calls)',
-                    'LTP (Calls)',
-                    'Volume (puts)',
-                    'OI Lakhs (Puts)',
-                    'LTP (Puts)'
-                ]
-
-                # Apply the style only to the specified columns
-                s2 = df_roc.style.applymap(lambda x: style_pos_neg(x, pos='color:white;background-color:darkgreen', neg='color:white;background-color:red'),
-                                            subset=columns_to_style)
-
-                # Display the styled dataframe
-                dataa = st.dataframe(s2, height=900)
+            # Display the styled dataframe
+            dataa = st.dataframe(s2, height=900)
 
             
             # print time
             now = datetime.now(IST)
 
-            print(f"Update {counter}: Changes saved for {now} ")
+            logging.log(f"Update {counter}: Changes saved for {now} ")
 
             # update counter
             counter+=1
 
-            # create a copy of the second dataframe to assign it to the earlier one
-            df = df_1.copy()
-            del df_1
+            # # create a copy of the second dataframe to assign it to the earlier one
+            # df = df_1.copy()
+            # del df_1
 
             time_end = datetime.now()
-            print(f"Time taken: {time_end - time_start}")
+            #print(f"Time taken: {time_end - time_start}")
 
             # TODO
             # chnge to 3 mins?
-            tm.sleep(30)
+            tm.sleep(10)
     
     st.write("Ending Program Now")
     # shut the virtual display
-    disp.stop()
+    # disp.stop()
 
-    print("Quiting driver now")
+    logging.log("Quiting driver now")
     # quit the driver
     page_driver.quit()
 
