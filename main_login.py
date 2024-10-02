@@ -19,7 +19,7 @@ import pytz
 import yfinance as yf
 import requests
 import logging
-# from pyvirtualdisplay import Display
+from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
@@ -396,8 +396,8 @@ def style_pos_neg(v, pos='', neg = ''):
 
 def main():
     # turn on virtual display
-    # disp = Display()
-    # disp.start()
+    disp = Display()
+    disp.start()
 
     # set up logging
     logger = logging.getLogger(__name__)
@@ -456,7 +456,7 @@ def main():
     time_end = datetime.now()
 
     #print(f"Time taken to fetch raw data: {time_end - time_start}")
-    tm.sleep(10)
+    tm.sleep(176)
 
     counter = 1
 
@@ -538,11 +538,11 @@ def main():
 
             # TODO
             # chnge to 3 mins?
-            tm.sleep(10)
+            tm.sleep(176)
     
     st.write("Ending Program Now")
     # shut the virtual display
-    # disp.stop()
+    disp.stop()
 
     logging.log("Quiting driver now")
     # quit the driver
