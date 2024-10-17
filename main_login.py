@@ -217,7 +217,8 @@ def find_and_return_table_no_button(driver):
     #     data_list = data.text.split()
 
     data_list = [data.text.split() for data in table_data]
-
+    # print(f"Data List: {data_list}")
+    # print(f"Data List[0]: {data_list[0]}")
     # return the table element
     return driver, data_list[0]
 
@@ -231,22 +232,22 @@ def build_dataframe(data_list):
     dt_string = datetime.now(IST).strftime("%H:%M")
 
     # reshape the data into rows of 33 elements
-    rows = [data_list[i:i+28] for i in range(0, len(data_list), 28)]
+    rows = [data_list[i:i+27] for i in range(0, len(data_list), 27)]
 
     # column names and corresponding indices
     columns = {
-        'volume_calls': 5,
-        'oi_change_calls': 6,
-        'oi_change_pct_calls': 7,
-        'oi_lakhs_calls': 8,
-        'ltp_calls': 11,
-        'Strike Price': 13,
-        'iv': 14,
-        'ltp_puts': 16,
-        'oi_lakh_puts': 20,
-        'oi_change_pct_puts': 21,
-        'oi_change_puts': 22,
-        'volume_puts': 23,
+        'volume_calls': 2,
+        'oi_change_calls': 3,
+        'oi_change_pct_calls': 4,
+        'oi_lakhs_calls': 5,
+        'ltp_calls': 10,
+        'Strike Price': 12,
+        'iv': 13,
+        'ltp_puts': 15,
+        'oi_lakh_puts': 21,
+        'oi_change_pct_puts': 22,
+        'oi_change_puts': 23,
+        'volume_puts': 24,
     }
 
     # initialize a list to store the rows of the DataFrame
@@ -272,7 +273,7 @@ def build_dataframe(data_list):
 
     # create df
     df = pd.DataFrame(df_data)
-
+    # print(f"DF: {df}")
     # return the df
     return df
 
@@ -283,7 +284,7 @@ def slice_df(df, nifty_futures):
 
     # calculate the strike prices to keep
     strike_prices_to_keep = [central_strike + i * 100 for i in range(-4, 4)]
-    #print(strike_prices_to_keep)
+    # print(strike_prices_to_keep)
     # filter the dataframe
     df = df[df['Strike Price'].isin(strike_prices_to_keep)]
 
@@ -343,6 +344,7 @@ def calculate_roc(df):
         
         # drop nas
         group_roc = group_roc.dropna()
+        # print(group_roc) ####
 
         # get the unique times and assign the later time to the new df
         unique_times = group['time'].unique()
@@ -354,6 +356,7 @@ def calculate_roc(df):
         group_roc['time'] = later_time
         
         df_roc_list.append(group_roc)
+        # print(df_roc_list) ###
 
     df_roc = pd.concat(df_roc_list, ignore_index=True)
     df_roc.rename(columns = {
@@ -443,7 +446,7 @@ def main():
 
     # build the dataframe from the list
     df = build_dataframe(data_list)
-
+    df.to_csv("test_00.csv") ## REMOVE TODO
     # slice the df based on the strike price
     df = slice_df(df, nifty_futures)
 
@@ -456,12 +459,12 @@ def main():
     time_end = datetime.now()
 
     #print(f"Time taken to fetch raw data: {time_end - time_start}")
-    tm.sleep(176)
+    tm.sleep(10)
 
     counter = 1
 
     with st.empty():
-        while is_time_between(time(0,2), time(15,30)):
+        while is_time_between(time(0,2), time(5,53)):
             time_start = datetime.now()
             # get the current nifty futures value
             # fetching Nifty 50 data
@@ -524,7 +527,7 @@ def main():
             # print time
             now = datetime.now(IST)
 
-            logging.log(f"Update {counter}: Changes saved for {now} ")
+            logging.info(f"Update {counter}: Changes saved for {now}")
 
             # update counter
             counter+=1
@@ -538,13 +541,13 @@ def main():
 
             # TODO
             # chnge to 3 mins?
-            tm.sleep(176)
+            tm.sleep(10)
     
     st.write("Ending Program Now")
     # shut the virtual display
     disp.stop()
 
-    logging.log("Quiting driver now")
+    logging.info("Quiting driver now")
     # quit the driver
     page_driver.quit()
 
