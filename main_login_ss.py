@@ -38,7 +38,7 @@ def enter_webpage(link):
 
     # Open the website
     driver.get(link) 
-
+    print(f"Entering link: {link}")
     # For maximizing window
     driver.maximize_window()
 
@@ -171,10 +171,12 @@ def find_and_return_table(driver):
     
     # //*[@id="app"]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]
     try:
+        print("Looking for button")
         # find select all columns button
         l = driver.find_element(By.XPATH, button_x_path)
 
         driver.execute_script("arguments[0].click();", l);
+        print("Button found ")
     except NoSuchElementException:
         print("Button not found, moving on.")
 
@@ -186,15 +188,20 @@ def find_and_return_table(driver):
 
     # sleep for 3 seconds
     tm.sleep(3)
-
+    
+    print("Looking for table")
     # find table element
     table_data = driver.find_elements(By.XPATH, x_path)
     # for data in table_data:
     #     data_list1 = data.text.split()
 
-
+    print(f"Length of table data: {len(table_data)}")
+    print(f"Type of table data: {type(table_data)}")
     data_list = [data.text.split() for data in table_data]
 
+    print(f"Length of data list: {len(data_list)}")
+    print(f"Type of data list: {type(data_list)}")
+    # print(f"Data list: {data_list}")
 
     # close tab
     # TODO will have to keep open?
@@ -480,7 +487,7 @@ def main():
 
     with st.empty():
         try:
-            while is_time_between(time(0,2), time(7,59)):
+            while is_time_between(time(0,2), time(9,20)):
                 time_start = datetime.now()
                 # get the current nifty futures value
 
