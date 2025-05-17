@@ -19,7 +19,7 @@ import pytz
 import yfinance as yf
 import requests
 import sys
-from pyvirtualdisplay import Display
+# from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
@@ -416,8 +416,8 @@ def style_pos_neg(v, pos='', neg = ''):
 
 def main():
     # turn on virtual display
-    disp = Display()
-    disp.start()
+    # disp = Display()
+    # disp.start()
 
     # set wide layout by default
     st.set_page_config(layout="wide")
@@ -458,7 +458,7 @@ def main():
     # nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
 
     #ADDED IN
-    nifty_futures = 24008
+    nifty_futures = 25019
 
 
     # initialise df to hold all the data
@@ -498,7 +498,7 @@ def main():
                 # # get the latest market price
                 # nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
 
-                nifty_futures = 24008
+                nifty_futures = 25019
                 # find and return the data
                 # print("SHOULD PRESS BUTTON NOW")
                 page_driver, data_list = find_and_return_table_no_button(page_driver)
@@ -590,7 +590,7 @@ def main():
             
             # Clean up resources
             try:
-                disp.stop()
+                # disp.stop()
                 page_driver.quit()
             except:
                 pass
@@ -601,7 +601,7 @@ def main():
         except Exception as e:
             st.error(f"An error occurred: {e}")
             try:
-                disp.stop()
+                #  disp.stop()
                 page_driver.quit()
             except:
                 pass
