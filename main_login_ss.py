@@ -68,22 +68,48 @@ def get_nifty_futures(driver):
 
 def login(driver):
     # set xpath for login button
-    login_button_x_path = '//*[@id="app"]/div/div[3]/div[2]/div[1]/div/div[2]/button'
+    # login_button_x_path = '//*[@id="app"]/div/div[3]/div[2]/div[1]/div/div[2]/button'
+    # login_button_x_path = '//*[@id="app"]/div/div[2]/nav/div/div[3]/div/button[1]'
 
-    # find login button
-    lb = driver.find_element(By.XPATH, login_button_x_path)
+    # # find login button
+    # lb = driver.find_element(By.XPATH, login_button_x_path)
+
+    # find login button by text content - more reliable than xpath
+    try:
+        lb = driver.find_element(By.XPATH, "//button[contains(text(), 'Login')]")
+    except NoSuchElementException:
+        # fallback: try finding by partial text match
+        try:
+            lb = driver.find_element(By.XPATH, "//button[normalize-space()='Login']")
+        except NoSuchElementException:
+            print("Login button not found")
+            return driver
 
     # click button
-    driver.execute_script("arguments[0].click();", lb);
+    driver.execute_script("arguments[0].click();", lb)
 
     # sleep
     tm.sleep(2)
-
     # set xpath for zerodha button
-    zerodha_button_x_path = '//*[@id="notloggedInSegment"]/div/div[1]/div[2]/button[1]'
+    # zerodha_button_x_path = '//*[@id="notloggedInSegment"]/div/div[1]/div[2]/button[1]'
+    # zerodha_button_x_path = '//*[@id="radix-4"]/div/div[1]/button[1]'
+    
 
     # find zerodha button
-    zb = driver.find_element(By.XPATH, zerodha_button_x_path)
+    # find zerodha button by text content - bulletproof approach
+    try:
+    #     zb = driver.find_element(By.XPATH, zerodha_button_x_path)
+    # except NoSuchElementException:
+    #     print("Zerodha button not found")
+    #     return driver
+        zb = driver.find_element(By.XPATH, "//button[contains(text(), 'Login with Zerodha')]")
+    except NoSuchElementException:
+        # fallback: try partial match or case variations
+        try:
+            zb = driver.find_element(By.XPATH, "//button[contains(normalize-space(), 'Zerodha')]")
+        except NoSuchElementException:
+            print("Zerodha button not found")
+            return driver
 
     # click button
     driver.execute_script("arguments[0].click();", zb);
@@ -107,10 +133,14 @@ def login(driver):
     password_input.send_keys("Kaustubh@1")
 
     # xpath for submit button
-    submit_button_x_path = '//*[@id="container"]/div/div/div[2]/form/div[4]/button'
+    # submit_button_x_path = '//*[@id="container"]/div/div/div[2]/form/div[4]/button'
+    # submit_button_x_path = '//*[@id="container"]/div/div/div[2]/form/div[4]/button'
+
+
 
     # find submit button
-    sb = driver.find_element(By.XPATH, submit_button_x_path)
+    # sb = driver.find_element(By.XPATH, submit_button_x_path)
+    sb = driver.find_element(By.XPATH, "//button[contains(text(), 'Login')]")
 
     # click button
     driver.execute_script("arguments[0].click();", sb);
@@ -167,7 +197,8 @@ def find_and_return_table(driver):
     # button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]'
     # button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/footer/div[1]/button[2]'
     # button_x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/footer/div[1]/button[2]'
-    button_x_path = '/html/body/div[1]/div/div[2]/div/div[2]/footer/div[1]/button[2]'
+    #button_x_path = '/html/body/div[1]/div/div[2]/div/div[2]/footer/div[1]/button[2]'
+    button_x_path = '/html/body/div[1]/div/div[2]/div/div/footer/div[1]/button[2]'
     
     # //*[@id="app"]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]
     try:
@@ -183,9 +214,9 @@ def find_and_return_table(driver):
     # set xpath for div that contains data
     # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
-    x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
+    # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
-
+    x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
     # sleep for 3 seconds
     tm.sleep(3)
     
@@ -215,7 +246,9 @@ def find_and_return_table_no_button(driver):
     # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
-    x_path = '/html/body/div[1]/div/div[2]/div/div[2]/footer/div[1]/button[2]'
+    # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/footer/div[1]/button[2]'
+    # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
+    x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
 
     # sleep for 3 seconds
     tm.sleep(3)
@@ -239,23 +272,40 @@ def build_dataframe(data_list):
     # get the current datetime
     dt_string = datetime.now(IST).strftime("%d/%m/%Y %H:%M:%S")
 
-    # reshape the data into rows of 41 elements (0 to 40 inclusive)
-    rows = [data_list[i:i+41] for i in range(0, len(data_list), 41)]
+    # reshape the data into rows of 41 elements (0 to 40 inclusive) ***TODO this is for without login
+    # with login, it is 27
+    rows = [data_list[i:i+27] for i in range(0, len(data_list), 27)]
+
+    # column names and corresponding indices, below is indices without login
+    # columns = {
+    #     'volume_calls': 6,
+    #     'oi_change_calls': 7,
+    #     'oi_change_pct_calls': 8,
+    #     'oi_lakhs_calls': 9,
+    #     'ltp_calls': 18,
+    #     'strike_price': 20,
+    #     'iv': 21,
+    #     'ltp_puts': 22,
+    #     'oi_lakh_puts': 32,
+    #     'oi_change_pct_puts': 33,
+    #     'oi_change_puts': 34,
+    #     'volume_puts': 35,
+    # }
 
     # column names and corresponding indices
-    columns = {
-        'volume_calls': 6,
-        'oi_change_calls': 7,
-        'oi_change_pct_calls': 8,
-        'oi_lakhs_calls': 9,
-        'ltp_calls': 18,
-        'strike_price': 20,
-        'iv': 21,
-        'ltp_puts': 22,
-        'oi_lakh_puts': 32,
-        'oi_change_pct_puts': 33,
-        'oi_change_puts': 34,
-        'volume_puts': 35,
+    columns = {       
+        'volume_calls': 2,
+        'oi_change_calls': 3 ,
+        'oi_change_pct_calls': 4,
+        'oi_lakhs_calls': 5,
+        'ltp_calls': 10,
+        'strike_price': 12,
+        'iv': 13,
+        'ltp_puts': 15,
+        'oi_lakh_puts': 21,
+        'oi_change_pct_puts': 22,
+        'oi_change_puts': 23,
+        'volume_puts': 24,
     }
 
     # initialize a list to store the rows of the DataFrame
@@ -433,16 +483,14 @@ def main():
     page_driver = enter_webpage('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
     
     # login
-    # st.write("Entering login credentials...")
-    # page_driver = login(page_driver)
-    # st.write("OTP sent, enter in website now")
-    # #otp = input("Enter OTP")
+    st.write("Entering login credentials...")
+    page_driver = login(page_driver)
+    st.write("OTP sent, enter in website now")
 
+    otp = get_otp_from_flask()
+    # tm.sleep(20)
 
-    # otp = get_otp_from_flask()
-    # # tm.sleep(20)
-
-    # page_driver = submit_otp(page_driver, otp)
+    page_driver = submit_otp(page_driver, otp)
 
     tm.sleep(10)
 
@@ -452,13 +500,13 @@ def main():
 
     #COMMENTING 4 LINES BELOW
     # fetching Nifty 50 data
-    # nifty = yf.Ticker("^NSEI")
+    nifty = yf.Ticker("^NSEI")
 
     # get the latest market price
-    # nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
+    nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
 
     #ADDED IN
-    nifty_futures = 25019
+    # nifty_futures = 25019
 
 
     # initialise df to hold all the data
@@ -487,30 +535,34 @@ def main():
 
     with st.empty():
         try:
-            while is_time_between(time(0,2), time(9,20)):
+            while is_time_between(time(0,2), time(9,40)):
                 time_start = datetime.now()
                 # get the current nifty futures value
 
-                # COMMENTING 4 LINES BELOW
+                # COMMENTING 4 LINES BELOW ***UNCOMMENT FOR REAL TIME DATA ***
                 # # fetching Nifty 50 data
-                # nifty = yf.Ticker("^NSEI")
+                nifty = yf.Ticker("^NSEI")
 
                 # # get the latest market price
                 # nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
 
-                nifty_futures = 25019
+                # nifty_futures = 25019
                 # find and return the data
                 # print("SHOULD PRESS BUTTON NOW")
                 page_driver, data_list = find_and_return_table_no_button(page_driver)
+                # print(f"Length of data list: {len(data_list)}")
+
                 df_1 = build_dataframe(data_list)
+                # print("Building dataframe, now saving to csv") 
+                df_1.to_csv("raw_data_1unsliced.csv")
 
                 # slice the dataframe based on nifty
                 df_1 = slice_df(df_1, nifty_futures)
-
+                # print("Slicing dataframe")
                 # save to csv
                 filename = f"raw_data_{counter}.csv"
                 df_1.to_csv(filename)
-
+                
                 # append to master df
                 all_data = pd.concat([df, df_1], ignore_index = True)
                 changes = calculate_roc(all_data)
