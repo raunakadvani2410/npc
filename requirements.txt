@@ -3,3 +3,6 @@ streamlit==1.32.0
 webdriver_manager==4.0.1
 numpy
 pandas
+yfinance
+pytz
+requests
