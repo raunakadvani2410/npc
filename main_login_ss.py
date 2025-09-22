@@ -23,8 +23,8 @@ from pyvirtualdisplay import Display
 
 def enter_webpage(link):
     # store exe directory
-    # cd_path = Service('./chromedriver')
-    cd_path = Service('/user/bin/chromedriver')
+    cd_path = Service('./chromedriver')
+
     
     # set chrome options
     chrome_options = Options()
