@@ -198,16 +198,17 @@ def find_and_return_table(driver):
     try:
         print("Looking for 'All Column View' button")
         # Try multiple text-based selectors for maximum reliability
-        try:
-            # First try: exact text match
-            l = driver.find_element(By.XPATH, "//button[contains(., 'All Column View')]")
-        except NoSuchElementException:
-            # Fallback 1: look for the p tag with the text
-            l = driver.find_element(By.XPATH, "//p[text()='All Column View']/parent::button")
-        except NoSuchElementException:
-            # Fallback 2: partial text match
-            l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column')]")
+        # try:
+        #     # First try: exact text match
+        #     l = driver.find_element(By.XPATH, "//button[contains(., 'All Column View')]")
+        # except NoSuchElementException:
+        #     # Fallback 1: look for the p tag with the text
+        #     l = driver.find_element(By.XPATH, "//p[text()='All Column View']/parent::button")
+        # except NoSuchElementException:
+        #     # Fallback 2: partial text match
+        #     l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column')]")
             
+        l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column View')]")
         driver.execute_script("arguments[0].click();", l)
         print("'All Column View' button found and clicked")
     except NoSuchElementException:
