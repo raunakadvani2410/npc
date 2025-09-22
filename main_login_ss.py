@@ -194,36 +194,57 @@ def get_otp_from_flask():
 
 def find_and_return_table(driver):
 
-    # set xpath for select all columns button
-    # button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]'
-    # button_x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/footer/div[1]/button[2]'
-    # button_x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/footer/div[1]/button[2]'
-    #button_x_path = '/html/body/div[1]/div/div[2]/div/div[2]/footer/div[1]/button[2]'
-    button_x_path = '/html/body/div[1]/div/div[2]/div/div/footer/div[1]/button[2]'
-    
-    # //*[@id="app"]/div/div[3]/div[2]/div[2]/div/footer/div[1]/button[2]
+    # Find button by text content - bulletproof approach
     try:
-        print("Looking for button")
-        # find select all columns button
-        l = driver.find_element(By.XPATH, button_x_path)
-
-        driver.execute_script("arguments[0].click();", l);
-        print("Button found ")
+        print("Looking for 'All Column View' button")
+        # Try multiple text-based selectors for maximum reliability
+        try:
+            # First try: exact text match
+            l = driver.find_element(By.XPATH, "//button[contains(., 'All Column View')]")
+        except NoSuchElementException:
+            # Fallback 1: look for the p tag with the text
+            l = driver.find_element(By.XPATH, "//p[text()='All Column View']/parent::button")
+        except NoSuchElementException:
+            # Fallback 2: partial text match
+            l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column')]")
+            
+        driver.execute_script("arguments[0].click();", l)
+        print("'All Column View' button found and clicked")
     except NoSuchElementException:
-        print("Button not found, moving on.")
+        print("'All Column View' button not found, moving on.")
 
     # set xpath for div that contains data
     # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
     # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
-    x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
+    # x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
     # sleep for 3 seconds
     tm.sleep(3)
-    
-    print("Looking for table")
-    # find table element
-    table_data = driver.find_elements(By.XPATH, x_path)
+
+    # print("Looking for table")
+    # # find table element
+    # table_data = driver.find_elements(By.XPATH, x_path)
+    print("Looking for options table")
+    try:
+        # Method 1: Find any tbody that contains option data (look for strike price patterns)
+        table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
+        
+        if not table_data:
+            # Method 2: Find tbody with option chain data structure
+            table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
+            
+        if not table_data:
+            # Method 3: Find any tbody in main content area
+            table_data = driver.find_elements(By.XPATH, "//main//tbody")
+            
+        if not table_data:
+            # Method 4: Last resort - find any tbody with multiple rows
+            table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
+            
+    except Exception as e:
+        print(f"Error finding table: {e}")
+        table_data = []
     # for data in table_data:
     #     data_list1 = data.text.split()
 
@@ -243,27 +264,32 @@ def find_and_return_table(driver):
     return driver, data_list[0]
 
 def find_and_return_table_no_button(driver):
-    # set xpath for div that contains data
-    # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/footer/div[1]/button[2]'
-    # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
-    x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
-
-    # sleep for 3 seconds
+    # Use same robust table finding logic
     tm.sleep(3)
 
-    # find table element
-    table_data = driver.find_elements(By.XPATH, x_path)
-
-    # for data in table_data:
-    #     data_list = data.text.split()
+    print("Looking for options table (no button)")
+    try:
+        # Method 1: Find any tbody that contains option data (look for strike price patterns)
+        table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
+        
+        if not table_data:
+            # Method 2: Find tbody with option chain data structure
+            table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
+            
+        if not table_data:
+            # Method 3: Find any tbody in main content area
+            table_data = driver.find_elements(By.XPATH, "//main//tbody")
+            
+        if not table_data:
+            # Method 4: Last resort - find any tbody with multiple rows
+            table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
+            
+    except Exception as e:
+        print(f"Error finding table: {e}")
+        table_data = []
 
     data_list = [data.text.split() for data in table_data]
-
-    # return the table element
-    return driver, data_list[0]
+    return driver, data_list[0] if data_list else []
 
 
 def build_dataframe(data_list):
