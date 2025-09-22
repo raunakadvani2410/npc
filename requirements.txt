@@ -6,3 +6,4 @@ pandas
 yfinance
 pytz
 requests
+PyVirtualDisplay==3.0
