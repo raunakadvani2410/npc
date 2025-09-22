@@ -256,7 +256,7 @@ def find_and_return_table(driver):
     print(f"Length of data list: {len(data_list)}")
     print(f"Type of data list: {type(data_list)}")
     # print(f"Data list: {data_list}")
-
+    print(f"Data list: {data_list}")
     # close tab
     # TODO will have to keep open?
     #driver.close()
