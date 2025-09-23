@@ -193,7 +193,7 @@ def get_otp_from_flask():
 
 
 def find_and_return_table(driver):
-
+    driver.get('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
     # Find button by text content - bulletproof approach
     try:
         print("Looking for 'All Column View' button")
