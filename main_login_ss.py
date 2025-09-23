@@ -520,7 +520,7 @@ def main():
 
     page_driver = submit_otp(page_driver, otp)
 
-    tm.sleep(10)
+    tm.sleep(15)
 
     time_start = datetime.now()
     print("Getting table")
