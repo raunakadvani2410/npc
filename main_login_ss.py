@@ -248,14 +248,49 @@ def find_and_return_table(driver):
         table_data = []
     # for data in table_data:
     #     data_list1 = data.text.split()
-
+    # data_list = [data.text.split() for data in table_data]
     print(f"Length of table data: {len(table_data)}")
     print(f"Type of table data: {type(table_data)}")
-    data_list = [data.text.split() for data in table_data]
+    
+    # DEBUG: Get detailed table structure instead of just text
+    if table_data:
+        tbody = table_data[0]  # Get the first tbody
+        rows = tbody.find_elements(By.TAG_NAME, "tr")
+        print(f"Found {len(rows)} rows in table")
+        
+        # Extract all cell data properly
+        all_row_data = []
+        for i, row in enumerate(rows):
+            cells = row.find_elements(By.TAG_NAME, "td")
+            row_data = []
+            for cell in cells:
+                # Get text content, handling empty cells
+                cell_text = cell.text.strip() if cell.text else ""
+                row_data.append(cell_text)
+            all_row_data.append(row_data)
+            if i < 3:  # Print first 3 rows for debugging
+                print(f"Row {i}: {len(row_data)} cells - {row_data}")
+        
+        # Save the structured data
+        max_cols = max(len(row) for row in all_row_data) if all_row_data else 0
+        print(f"Maximum columns in any row: {max_cols}")
+        
+        # Create a proper DataFrame with all table data
+        import pandas as pd
+        structured_df = pd.DataFrame(all_row_data)
+        structured_df.to_csv("debug_full_table_structure.csv", index=True)
+        print(f"Full table structure saved to debug_full_table_structure.csv")
+        
+        # Also flatten it for compatibility with existing code
+        flat_data = []
+        for row in all_row_data:
+            flat_data.extend(row)
+        
+        data_list = [flat_data]  # Wrap in list for compatibility
+    else:
+        data_list = []
 
-    print(f"Length of data list: {len(data_list)}")
-    print(f"Type of data list: {type(data_list)}")
-    print(f"Data list: {data_list}")
+    print(f"Length of flattened data: {len(data_list[0]) if data_list else 0}")
     
     # DEBUG: Save raw data as CSV before any processing
     if data_list:
