@@ -255,8 +255,16 @@ def find_and_return_table(driver):
 
     print(f"Length of data list: {len(data_list)}")
     print(f"Type of data list: {type(data_list)}")
-    # print(f"Data list: {data_list}")
     print(f"Data list: {data_list}")
+    
+    # DEBUG: Save raw data as CSV before any processing
+    if data_list:
+        raw_df = pd.DataFrame({'raw_data': data_list[0]})
+        raw_df.to_csv("debug_raw_table_data.csv", index=True)
+        print(f"Raw data saved to debug_raw_table_data.csv - {len(data_list[0])} elements")
+        
+
+    
     # close tab
     # TODO will have to keep open?
     #driver.close()
