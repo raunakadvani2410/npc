@@ -287,45 +287,41 @@ def find_and_return_table(driver):
     print(f"Length of table data: {len(table_data)}")
     print(f"Type of table data: {type(table_data)}")
     
-    # DEBUG: Get detailed table structure instead of just text
+    # Extract data directly from HTML source to bypass visibility issues
     if table_data:
-        data_list = [data.text.split() for data in table_data]
-        print(f"Data list: {data_list}")
-
-        tbody = table_data[0]  # Get the first tbody
-        rows = tbody.find_elements(By.TAG_NAME, "tr")
-        print(f"Rows: {rows}")
-        print(f"Found {len(rows)} rows in table")
+        print("Extracting data from HTML source...")
+        tbody = table_data[0]
         
-        # Extract all cell data properly
-        all_row_data = []
-        for i, row in enumerate(rows):
-            cells = row.find_elements(By.TAG_NAME, "td")
-            row_data = []
-            for cell in cells:
-                # Get text content, handling empty cells
-                cell_text = cell.text.strip() if cell.text else ""
-                row_data.append(cell_text)
-            all_row_data.append(row_data)
-            if i < 3:  # Print first 3 rows for debugging
-                print(f"Row {i}: {len(row_data)} cells - {row_data}")
+        # Get the raw HTML of the tbody
+        tbody_html = tbody.get_attribute('outerHTML')
         
-        # Save the structured data
-        max_cols = max(len(row) for row in all_row_data) if all_row_data else 0
-        print(f"Maximum columns in any row: {max_cols}")
+        # Save raw HTML for debugging
+        with open("debug_tbody_html.html", "w", encoding="utf-8") as f:
+            f.write(tbody_html)
+        print("Raw tbody HTML saved to debug_tbody_html.html")
         
-        # Create a proper DataFrame with all table data
-        import pandas as pd
-        structured_df = pd.DataFrame(all_row_data)
-        structured_df.to_csv("debug_full_table_structure.csv", index=True)
-        print(f"Full table structure saved to debug_full_table_structure.csv")
+        # Use JavaScript to extract ALL text content from the tbody
+        all_text = driver.execute_script("""
+            var tbody = arguments[0];
+            var allText = [];
+            var rows = tbody.querySelectorAll('tr');
+            
+            for (var i = 0; i < rows.length; i++) {
+                var cells = rows[i].querySelectorAll('td');
+                for (var j = 0; j < cells.length; j++) {
+                    var cellText = cells[j].textContent || cells[j].innerText || '';
+                    if (cellText.trim()) {
+                        allText.push(cellText.trim());
+                    }
+                }
+            }
+            return allText;
+        """, tbody)
         
-        # Also flatten it for compatibility with existing code
-        flat_data = []
-        for row in all_row_data:
-            flat_data.extend(row)
+        print(f"Extracted {len(all_text)} text elements from HTML")
+        print(f"First 20 elements: {all_text[:20]}")
         
-        data_list = [flat_data]  # Wrap in list for compatibility
+        data_list = [all_text]
     else:
         data_list = []
 
