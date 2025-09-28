@@ -223,9 +223,18 @@ def find_and_return_table(driver):
     # sleep for 3 seconds
     tm.sleep(3)
 
-    # print("Looking for table")
-    # # find table element
-    # table_data = driver.find_elements(By.XPATH, x_path)
+    # Force load all columns by scrolling the table horizontally
+    try:
+        # Find the scrollable table container
+        table_container = driver.find_element(By.XPATH, "//div[contains(@class, 'table') or contains(@style, 'overflow')]")
+        # Scroll to max width and back to force loading all columns
+        driver.execute_script("arguments[0].scrollLeft = arguments[0].scrollWidth;", table_container)
+        tm.sleep(1)
+        driver.execute_script("arguments[0].scrollLeft = 0;", table_container)
+        tm.sleep(1)
+    except:
+        pass  # If container not found, continue anyway
+
     print("Looking for options table")
     try:
         # Method 1: Find any tbody that contains option data (look for strike price patterns)
