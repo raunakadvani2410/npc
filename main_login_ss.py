@@ -211,6 +211,10 @@ def find_and_return_table(driver):
         l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column View')]")
         driver.execute_script("arguments[0].click();", l)
         print("'All Column View' button found and clicked")
+        
+        # Wait for table to fully expand after clicking "All Column View"
+        print("Waiting for table to expand...")
+        tm.sleep(5)  # Give it more time to load all columns
     except NoSuchElementException:
         print("'All Column View' button not found, moving on.")
 
@@ -224,16 +228,38 @@ def find_and_return_table(driver):
     tm.sleep(3)
 
     # Force load all columns by scrolling the table horizontally
+    print("Attempting to load all table columns...")
     try:
-        # Find the scrollable table container
-        table_container = driver.find_element(By.XPATH, "//div[contains(@class, 'table') or contains(@style, 'overflow')]")
-        # Scroll to max width and back to force loading all columns
-        driver.execute_script("arguments[0].scrollLeft = arguments[0].scrollWidth;", table_container)
-        tm.sleep(1)
-        driver.execute_script("arguments[0].scrollLeft = 0;", table_container)
-        tm.sleep(1)
-    except:
-        pass  # If container not found, continue anyway
+        # Find ALL possible scrollable containers
+        containers = driver.find_elements(By.XPATH, "//div[contains(@style, 'overflow') or contains(@class, 'scroll') or contains(@class, 'table')]")
+        print(f"Found {len(containers)} potential scrollable containers")
+        
+        for i, container in enumerate(containers):
+            try:
+                scroll_width = driver.execute_script("return arguments[0].scrollWidth;", container)
+                client_width = driver.execute_script("return arguments[0].clientWidth;", container)
+                print(f"Container {i}: scrollWidth={scroll_width}, clientWidth={client_width}")
+                
+                if scroll_width > client_width:  # This container can scroll horizontally
+                    print(f"Scrolling container {i} horizontally...")
+                    # Scroll right to max width
+                    driver.execute_script("arguments[0].scrollLeft = arguments[0].scrollWidth;", container)
+                    tm.sleep(0.5)
+                    # Scroll back to start
+                    driver.execute_script("arguments[0].scrollLeft = 0;", container)
+                    tm.sleep(0.5)
+            except Exception as e:
+                print(f"Error scrolling container {i}: {e}")
+        
+        # Also try scrolling the main content area
+        try:
+            driver.execute_script("window.scrollTo(0, 0);")  # Reset page scroll
+            tm.sleep(1)
+        except:
+            pass
+            
+    except Exception as e:
+        print(f"Error finding scrollable containers: {e}")
 
     print("Looking for options table")
     try:
