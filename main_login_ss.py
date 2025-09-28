@@ -254,8 +254,12 @@ def find_and_return_table(driver):
     
     # DEBUG: Get detailed table structure instead of just text
     if table_data:
+        data_list = [data.text.split() for data in table_data]
+        print(f"Data list: {data_list}")
+
         tbody = table_data[0]  # Get the first tbody
         rows = tbody.find_elements(By.TAG_NAME, "tr")
+        print(f"Rows: {rows}")
         print(f"Found {len(rows)} rows in table")
         
         # Extract all cell data properly
@@ -333,6 +337,7 @@ def find_and_return_table_no_button(driver):
         table_data = []
 
     data_list = [data.text.split() for data in table_data]
+    print(f"Data list: {data_list}")
     return driver, data_list[0] if data_list else []
 
 
