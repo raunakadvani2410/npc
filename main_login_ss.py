@@ -8,7 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from datetime import datetime, time
 import time as tm
 import numpy as np
@@ -229,71 +229,103 @@ def get_otp_from_flask():
 def find_and_return_table(driver):
     driver.get('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
     # Find button by text content - bulletproof approach
-    try:
+    try:    
         print("Looking for 'All Column View' button")
-        # Try multiple text-based selectors for maximum reliability
-        # try:
-        #     # First try: exact text match
-        #     l = driver.find_element(By.XPATH, "//button[contains(., 'All Column View')]")
-        # except NoSuchElementException:
-        #     # Fallback 1: look for the p tag with the text
-        #     l = driver.find_element(By.XPATH, "//p[text()='All Column View']/parent::button")
-        # except NoSuchElementException:
-        #     # Fallback 2: partial text match
-        #     l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column')]")
-            
-        l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column View')]")
+    
+        # Wait for the button to be present (up to 10 seconds)
+        wait = WebDriverWait(driver, 10)
+        
+        # Primary: Find button via its child <p> with exact text
+        l = wait.until(EC.element_to_be_clickable((By.XPATH, "//p[text()='All Column View']/parent::button")))
+        
+        # If needed, uncomment fallbacks for variations (e.g., partial text or normalized spaces)
+        # except TimeoutException:
+        #     # Fallback 1: Partial text match on <p>
+        #     l = wait.until(EC.element_to_be_clickable((By.XPATH, "//p[contains(text(), 'All Column')]/parent::button")))
+        # except TimeoutException:
+        #     # Fallback 2: Use button classes from HTML for reliability
+        #     l = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'sc-bZSQDF') and contains(@class, 'dqCLEx')]")))
+        
+        # Click using JavaScript (reliable for hidden or overlaid elements)
         driver.execute_script("arguments[0].click();", l)
         print("'All Column View' button found and clicked")
         
-        # Wait for table to fully expand after clicking "All Column View"
+        # Wait for table to expand (e.g., check for a new column or increased element count)
         print("Waiting for table to expand...")
-        tm.sleep(5)  # Give it more time to load all columns
-    except NoSuchElementException:
-        print("'All Column View' button not found, moving on.")
+        wait.until(EC.presence_of_element_located((By.XPATH, "//tbody//td[contains(@class, 'col-ce')]")))  # Adjust to a known expanded column class
+        # If you know a specific post-click element, use it here for better accuracy
+    
+    except (NoSuchElementException, TimeoutException) as e:
+        print(f"'All Column View' button not found or not clickable: {e}. Moving on.")
 
-    # set xpath for div that contains data
-    # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
-    # x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
-    # sleep for 3 seconds
-    tm.sleep(3)
 
-    # Force load all columns by scrolling the table horizontally
-    print("Attempting to load all table columns...")
-    try:
-        # Find ALL possible scrollable containers
-        containers = driver.find_elements(By.XPATH, "//div[contains(@style, 'overflow') or contains(@class, 'scroll') or contains(@class, 'table')]")
-        print(f"Found {len(containers)} potential scrollable containers")
-        
-        for i, container in enumerate(containers):
-            try:
-                scroll_width = driver.execute_script("return arguments[0].scrollWidth;", container)
-                client_width = driver.execute_script("return arguments[0].clientWidth;", container)
-                print(f"Container {i}: scrollWidth={scroll_width}, clientWidth={client_width}")
-                
-                if scroll_width > client_width:  # This container can scroll horizontally
-                    print(f"Scrolling container {i} horizontally...")
-                    # Scroll right to max width
-                    driver.execute_script("arguments[0].scrollLeft = arguments[0].scrollWidth;", container)
-                    tm.sleep(0.5)
-                    # Scroll back to start
-                    driver.execute_script("arguments[0].scrollLeft = 0;", container)
-                    tm.sleep(0.5)
-            except Exception as e:
-                print(f"Error scrolling container {i}: {e}")
-        
-        # Also try scrolling the main content area
-        try:
-            driver.execute_script("window.scrollTo(0, 0);")  # Reset page scroll
-            tm.sleep(1)
-        except:
-            pass
+
+
+    # Commented below
+    #     print("Looking for 'All Column View' button")
+    #     # Try multiple text-based selectors for maximum reliability
+    #     # try:
+    #     #     # First try: exact text match
+    #     #     l = driver.find_element(By.XPATH, "//button[contains(., 'All Column View')]")
+    #     # except NoSuchElementException:
+    #     #     # Fallback 1: look for the p tag with the text
+    #     #     l = driver.find_element(By.XPATH, "//p[text()='All Column View']/parent::button")
+    #     # except NoSuchElementException:
+    #     #     # Fallback 2: partial text match
+    #     #     l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column')]")
             
-    except Exception as e:
-        print(f"Error finding scrollable containers: {e}")
+    #     l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column View')]")
+    #     driver.execute_script("arguments[0].click();", l)
+    #     print("'All Column View' button found and clicked")
+        
+    #     # Wait for table to fully expand after clicking "All Column View"
+    #     print("Waiting for table to expand...")
+    #     tm.sleep(5)  # Give it more time to load all columns
+    # except NoSuchElementException:
+    #     print("'All Column View' button not found, moving on.")
+
+    # # set xpath for div that contains data
+    # # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
+    # # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
+    # # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
+    # # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
+    # # x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
+    # # sleep for 3 seconds
+    # tm.sleep(3)
+
+    # # Force load all columns by scrolling the table horizontally
+    # print("Attempting to load all table columns...")
+    # try:
+    #     # Find ALL possible scrollable containers
+    #     containers = driver.find_elements(By.XPATH, "//div[contains(@style, 'overflow') or contains(@class, 'scroll') or contains(@class, 'table')]")
+    #     print(f"Found {len(containers)} potential scrollable containers")
+        
+    #     for i, container in enumerate(containers):
+    #         try:
+    #             scroll_width = driver.execute_script("return arguments[0].scrollWidth;", container)
+    #             client_width = driver.execute_script("return arguments[0].clientWidth;", container)
+    #             print(f"Container {i}: scrollWidth={scroll_width}, clientWidth={client_width}")
+                
+    #             if scroll_width > client_width:  # This container can scroll horizontally
+    #                 print(f"Scrolling container {i} horizontally...")
+    #                 # Scroll right to max width
+    #                 driver.execute_script("arguments[0].scrollLeft = arguments[0].scrollWidth;", container)
+    #                 tm.sleep(0.5)
+    #                 # Scroll back to start
+    #                 driver.execute_script("arguments[0].scrollLeft = 0;", container)
+    #                 tm.sleep(0.5)
+    #         except Exception as e:
+    #             print(f"Error scrolling container {i}: {e}")
+        
+    #     # Also try scrolling the main content area
+    #     try:
+    #         driver.execute_script("window.scrollTo(0, 0);")  # Reset page scroll
+    #         tm.sleep(1)
+    #     except:
+    #         pass
+            
+    # except Exception as e:
+    #     print(f"Error finding scrollable containers: {e}")
 
     print("Looking for options table")
     try:
