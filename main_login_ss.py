@@ -32,6 +32,31 @@ def enter_webpage(link):
     chrome_options.add_argument("--window-size=3840,2160")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--no-sandbox")
+    
+
+    # NEW: PERPLEX
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")  # Switch to Windows desktop UA for variety
+
+    # NEW: Force desktop viewport and disable mobile emulation
+    chrome_options.add_argument("--disable-mobile-emulation")  # Explicitly disable any mobile traits
+    chrome_options.add_argument("--force-device-scale-factor=1")  # Ensure 1:1 scaling (desktop-like)
+    chrome_options.add_argument("--high-dpi-support=1")  # Support high-res desktop displays
+
+    # NEW: Emulate desktop metrics explicitly (overrides headless defaults)
+    desktop_emulation = {
+        "deviceMetrics": {"width": 1920, "height": 1080, "pixelRatio": 1.0},
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "clientHints": {"platform": "Windows", "mobile": False}
+    }
+    chrome_options.add_experimental_option("mobileEmulation", desktop_emulation)
+
+
+    ## NEW
+    # Make headless browser look more like a real browser
+    # chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    # chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    # chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    # chrome_options.add_experimental_option('useAutomationExtension', False)
 
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
@@ -40,6 +65,15 @@ def enter_webpage(link):
     # Open the website
     driver.get(link) 
     print(f"Entering link: {link}")
+
+    # Maximize window
+    driver.maximize_window()
+    driver.execute_script("window.resizeTo(3840, 2160);")
+    
+    # NEW
+    # Remove webdriver property to avoid detection
+    # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    
     # For maximizing window
     driver.maximize_window()
 
@@ -573,7 +607,7 @@ def style_pos_neg(v, pos='', neg = ''):
 
 def main():
     # turn on virtual display
-    disp = Display()
+    disp = Display(visible=0, size=(3840, 2160))
     disp.start()
 
     # set wide layout by default
