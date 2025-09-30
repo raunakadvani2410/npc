@@ -332,17 +332,17 @@ def find_and_return_table(driver):
         # Method 1: Find any tbody that contains option data (look for strike price patterns)
         table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
         
-        if not table_data:
-            # Method 2: Find tbody with option chain data structure
-            table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
+        # if not table_data:
+        #     # Method 2: Find tbody with option chain data structure
+        #     table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
             
-        if not table_data:
-            # Method 3: Find any tbody in main content area
-            table_data = driver.find_elements(By.XPATH, "//main//tbody")
+        # if not table_data:
+        #     # Method 3: Find any tbody in main content area
+        #     table_data = driver.find_elements(By.XPATH, "//main//tbody")
             
-        if not table_data:
-            # Method 4: Last resort - find any tbody with multiple rows
-            table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
+        # if not table_data:
+        #     # Method 4: Last resort - find any tbody with multiple rows
+        #     table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
             
     except Exception as e:
         print(f"Error finding table: {e}")
@@ -352,58 +352,8 @@ def find_and_return_table(driver):
     # data_list = [data.text.split() for data in table_data]
     print(f"Length of table data: {len(table_data)}")
     print(f"Type of table data: {type(table_data)}")
-    
-    # Extract data directly from HTML source to bypass visibility issues
-    if table_data:
-        print("Extracting data from HTML source...")
-        tbody = table_data[0]
-        
-        # Get the raw HTML of the tbody
-        tbody_html = tbody.get_attribute('outerHTML')
-        
-        # Save raw HTML for debugging
-        with open("debug_tbody_html.html", "w", encoding="utf-8") as f:
-            f.write(tbody_html)
-        print("Raw tbody HTML saved to debug_tbody_html.html")
-        
-        # Use JavaScript to extract ALL text content from the tbody
-        all_text = driver.execute_script("""
-            var tbody = arguments[0];
-            var allText = [];
-            var rows = tbody.querySelectorAll('tr');
-            
-            for (var i = 0; i < rows.length; i++) {
-                var cells = rows[i].querySelectorAll('td');
-                for (var j = 0; j < cells.length; j++) {
-                    var cellText = cells[j].textContent || cells[j].innerText || '';
-                    if (cellText.trim()) {
-                        allText.push(cellText.trim());
-                    }
-                }
-            }
-            return allText;
-        """, tbody)
-        
-        print(f"Extracted {len(all_text)} text elements from HTML")
-        print(f"First 20 elements: {all_text[:20]}")
-        
-        data_list = [all_text]
-    else:
-        data_list = []
-
-    print(f"Length of flattened data: {len(data_list[0]) if data_list else 0}")
-    
-    # DEBUG: Save raw data as CSV before any processing
-    if data_list:
-        raw_df = pd.DataFrame({'raw_data': data_list[0]})
-        raw_df.to_csv("debug_raw_table_data.csv", index=True)
-        print(f"Raw data saved to debug_raw_table_data.csv - {len(data_list[0])} elements")
-        
-
-    
-    # close tab
-    # TODO will have to keep open?
-    #driver.close()
+   
+    data_list = [data.text.split() for data in table_data]
     
     # return the table element
     return driver, data_list[0]
@@ -417,17 +367,17 @@ def find_and_return_table_no_button(driver):
         # Method 1: Find any tbody that contains option data (look for strike price patterns)
         table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
         
-        if not table_data:
-            # Method 2: Find tbody with option chain data structure
-            table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
+        # if not table_data:
+        #     # Method 2: Find tbody with option chain data structure
+        #     table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
             
-        if not table_data:
-            # Method 3: Find any tbody in main content area
-            table_data = driver.find_elements(By.XPATH, "//main//tbody")
+        # if not table_data:
+        #     # Method 3: Find any tbody in main content area
+        #     table_data = driver.find_elements(By.XPATH, "//main//tbody")
             
-        if not table_data:
-            # Method 4: Last resort - find any tbody with multiple rows
-            table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
+        # if not table_data:
+        #     # Method 4: Last resort - find any tbody with multiple rows
+        #     table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
             
     except Exception as e:
         print(f"Error finding table: {e}")
@@ -486,20 +436,36 @@ def build_dataframe(data_list):
 
     # process each row
     for i, row in enumerate(rows):
+        print(f"\n=== PROCESSING ROW {i} ===")
+        print(f"Row length: {len(row)}")
+        print(f"Row data: {row}")
+        
         df_row = {}
         for column, index in columns.items():
             try:
-                value = row[index].replace('%', '')
-                if column == 'Strike Price':
-                    df_row[column] = int(float(value))  
+                if index < len(row):
+                    value = row[index].replace('%', '')
+                    print(f"  {column} (index {index}): '{row[index]}' -> '{value}'")
+                    
+                    if column == 'strike_price':
+                        df_row[column] = int(float(value))  
+                    else:
+                        df_row[column] = float(value)
                 else:
-                    df_row[column] = float(value)
-            except (ValueError, IndexError):
+                    print(f"  {column} (index {index}): INDEX OUT OF RANGE (row length: {len(row)})")
+                    df_row[column] = np.nan
+            except (ValueError, IndexError) as e:
+                print(f"  {column} (index {index}): ERROR - {e}")
                 df_row[column] = np.nan  # Replace problematic values with NaN
 
         # add the current datetime as a column
         df_row['time'] = dt_string
         df_data.append(df_row)
+        
+        # Only print first 3 rows to avoid spam
+        if i >= 2:
+            print("... (stopping debug output after 3 rows)")
+            break
 
 
     # create df
