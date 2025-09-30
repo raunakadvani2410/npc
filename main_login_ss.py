@@ -330,8 +330,7 @@ def build_dataframe(data_list):
             try:
                 if index < len(row):
                     value = row[index].replace('%', '')
-                    print(f"  {column} (index {index}): '{row[index]}' -> '{value}'")
-                    
+                                        
                     if column == 'strike_price':
                         df_row[column] = int(float(value))  
                     else:
@@ -586,7 +585,7 @@ def main():
                 # concat dfs
                 df_roc = pd.concat([df_roc, changes], ignore_index = True)
                 st.write(f"ROC update: {counter}")
-                
+
                 # put in ascending order of strike price and time
                 df_roc = df_roc.sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, True])
 
