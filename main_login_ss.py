@@ -615,7 +615,7 @@ def main():
                         strike_data = strike_data.sort_values('Time (ROC)', ascending=True)
                         
                         # Apply your original styling to the filtered data
-                        s2 = strike_data.style.applymap(
+                        s2 = strike_data.style.map(
                             lambda x: style_pos_neg(x, 
                                 pos='color:white;background-color:darkgreen', 
                                 neg='color:white;background-color:red'),
