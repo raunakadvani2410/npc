@@ -321,16 +321,12 @@ def build_dataframe(data_list):
 
     # process each row
     for i, row in enumerate(rows):
-        print(f"\n=== PROCESSING ROW {i} ===")
-        print(f"Row length: {len(row)}")
-        print(f"Row data: {row}")
-        
         df_row = {}
         for column, index in columns.items():
             try:
                 if index < len(row):
                     value = row[index].replace('%', '')
-                                        
+
                     if column == 'strike_price':
                         df_row[column] = int(float(value))  
                     else:
@@ -484,6 +480,7 @@ def style_pos_neg(v, pos='', neg = ''):
 
 
 def main():
+    
     # turn on virtual display
     disp = Display(visible=0, size=(3840, 2160))
     disp.start()
@@ -674,10 +671,8 @@ def main():
     return
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print(f"Main program error: {e}")
-        st.stop()
+# Move main logic outside of function to prevent Streamlit reruns
+if 'initialized' not in st.session_state:
+    st.session_state['initialized'] = True
+    main()
     
