@@ -50,14 +50,6 @@ def enter_webpage(link):
     }
     chrome_options.add_experimental_option("mobileEmulation", desktop_emulation)
 
-
-    ## NEW
-    # Make headless browser look more like a real browser
-    # chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    # chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    # chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    # chrome_options.add_experimental_option('useAutomationExtension', False)
-
     # set driver directory
     # TODO below line for dsan5400, older version of selenium
     driver = webdriver.Chrome(service=cd_path, options= chrome_options)
@@ -167,14 +159,8 @@ def login(driver):
     # input the password
     password_input.send_keys("Kaustubh@1")
 
-    # xpath for submit button
-    # submit_button_x_path = '//*[@id="container"]/div/div/div[2]/form/div[4]/button'
-    # submit_button_x_path = '//*[@id="container"]/div/div/div[2]/form/div[4]/button'
-
-
 
     # find submit button
-    # sb = driver.find_element(By.XPATH, submit_button_x_path)
     sb = driver.find_element(By.XPATH, "//button[contains(text(), 'Login')]")
 
     # click button
@@ -227,7 +213,6 @@ def get_otp_from_flask():
 
 
 def find_and_return_table(driver):
-    driver.get('https://web.sensibull.com/option-chain?tradingsymbol=NIFTY')
     # Find button by text content - bulletproof approach
     try:    
         print("Looking for 'All Column View' button")
@@ -237,15 +222,7 @@ def find_and_return_table(driver):
         
         # Primary: Find button via its child <p> with exact text
         l = wait.until(EC.element_to_be_clickable((By.XPATH, "//p[text()='All Column View']/parent::button")))
-        
-        # If needed, uncomment fallbacks for variations (e.g., partial text or normalized spaces)
-        # except TimeoutException:
-        #     # Fallback 1: Partial text match on <p>
-        #     l = wait.until(EC.element_to_be_clickable((By.XPATH, "//p[contains(text(), 'All Column')]/parent::button")))
-        # except TimeoutException:
-        #     # Fallback 2: Use button classes from HTML for reliability
-        #     l = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'sc-bZSQDF') and contains(@class, 'dqCLEx')]")))
-        
+     
         # Click using JavaScript (reliable for hidden or overlaid elements)
         driver.execute_script("arguments[0].click();", l)
         print("'All Column View' button found and clicked")
@@ -258,91 +235,12 @@ def find_and_return_table(driver):
     except (NoSuchElementException, TimeoutException) as e:
         print(f"'All Column View' button not found or not clickable: {e}. Moving on.")
 
-
-
-
-    # Commented below
-    #     print("Looking for 'All Column View' button")
-    #     # Try multiple text-based selectors for maximum reliability
-    #     # try:
-    #     #     # First try: exact text match
-    #     #     l = driver.find_element(By.XPATH, "//button[contains(., 'All Column View')]")
-    #     # except NoSuchElementException:
-    #     #     # Fallback 1: look for the p tag with the text
-    #     #     l = driver.find_element(By.XPATH, "//p[text()='All Column View']/parent::button")
-    #     # except NoSuchElementException:
-    #     #     # Fallback 2: partial text match
-    #     #     l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column')]")
-            
-    #     l = driver.find_element(By.XPATH, "//button[contains(text(), 'All Column View')]")
-    #     driver.execute_script("arguments[0].click();", l)
-    #     print("'All Column View' button found and clicked")
-        
-    #     # Wait for table to fully expand after clicking "All Column View"
-    #     print("Waiting for table to expand...")
-    #     tm.sleep(5)  # Give it more time to load all columns
-    # except NoSuchElementException:
-    #     print("'All Column View' button not found, moving on.")
-
-    # # set xpath for div that contains data
-    # # x_path = '/html/body/div[1]/div/div[3]/div[2]/div/div/main/div/table/tbody'
-    # # x_path = '/html/body/div[1]/div/div[2]/div[2]/div[2]/div/main/div/table/tbody'
-    # # x_path = '/html/body/div[1]/div/div[2]/div/div[2]/main/div/table/tbody'
-    # # x_path = '/html/body/div[1]/div/div[3]/div[2]/div[2]/div/main/div/table/tbody'
-    # # x_path = '/html/body/div[1]/div/div[2]/div/div/main/div/table/tbody'
-    # # sleep for 3 seconds
-    # tm.sleep(3)
-
-    # # Force load all columns by scrolling the table horizontally
-    # print("Attempting to load all table columns...")
-    # try:
-    #     # Find ALL possible scrollable containers
-    #     containers = driver.find_elements(By.XPATH, "//div[contains(@style, 'overflow') or contains(@class, 'scroll') or contains(@class, 'table')]")
-    #     print(f"Found {len(containers)} potential scrollable containers")
-        
-    #     for i, container in enumerate(containers):
-    #         try:
-    #             scroll_width = driver.execute_script("return arguments[0].scrollWidth;", container)
-    #             client_width = driver.execute_script("return arguments[0].clientWidth;", container)
-    #             print(f"Container {i}: scrollWidth={scroll_width}, clientWidth={client_width}")
-                
-    #             if scroll_width > client_width:  # This container can scroll horizontally
-    #                 print(f"Scrolling container {i} horizontally...")
-    #                 # Scroll right to max width
-    #                 driver.execute_script("arguments[0].scrollLeft = arguments[0].scrollWidth;", container)
-    #                 tm.sleep(0.5)
-    #                 # Scroll back to start
-    #                 driver.execute_script("arguments[0].scrollLeft = 0;", container)
-    #                 tm.sleep(0.5)
-    #         except Exception as e:
-    #             print(f"Error scrolling container {i}: {e}")
-        
-    #     # Also try scrolling the main content area
-    #     try:
-    #         driver.execute_script("window.scrollTo(0, 0);")  # Reset page scroll
-    #         tm.sleep(1)
-    #     except:
-    #         pass
-            
-    # except Exception as e:
-    #     print(f"Error finding scrollable containers: {e}")
-
     print("Looking for options table")
     try:
         # Method 1: Find any tbody that contains option data (look for strike price patterns)
         table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
         
-        # if not table_data:
-        #     # Method 2: Find tbody with option chain data structure
-        #     table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
-            
-        # if not table_data:
-        #     # Method 3: Find any tbody in main content area
-        #     table_data = driver.find_elements(By.XPATH, "//main//tbody")
-            
-        # if not table_data:
-        #     # Method 4: Last resort - find any tbody with multiple rows
-        #     table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
+
             
     except Exception as e:
         print(f"Error finding table: {e}")
@@ -366,25 +264,12 @@ def find_and_return_table_no_button(driver):
     try:
         # Method 1: Find any tbody that contains option data (look for strike price patterns)
         table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
-        
-        # if not table_data:
-        #     # Method 2: Find tbody with option chain data structure
-        #     table_data = driver.find_elements(By.XPATH, "//tbody[.//td[contains(@class, 'col-ce')]]")
-            
-        # if not table_data:
-        #     # Method 3: Find any tbody in main content area
-        #     table_data = driver.find_elements(By.XPATH, "//main//tbody")
-            
-        # if not table_data:
-        #     # Method 4: Last resort - find any tbody with multiple rows
-        #     table_data = driver.find_elements(By.XPATH, "//tbody[count(.//tr) > 5]")
             
     except Exception as e:
         print(f"Error finding table: {e}")
         table_data = []
 
     data_list = [data.text.split() for data in table_data]
-    print(f"Data list: {data_list}")
     return driver, data_list[0] if data_list else []
 
 
@@ -462,10 +347,6 @@ def build_dataframe(data_list):
         df_row['time'] = dt_string
         df_data.append(df_row)
         
-        # Only print first 3 rows to avoid spam
-        if i >= 2:
-            print("... (stopping debug output after 3 rows)")
-            break
 
 
     # create df
@@ -678,26 +559,17 @@ def main():
                 time_start = datetime.now()
                 # get the current nifty futures value
 
-                # COMMENTING 4 LINES BELOW ***UNCOMMENT FOR REAL TIME DATA ***
-                # # fetching Nifty 50 data
+                # fetching Nifty 50 data
                 nifty = yf.Ticker("^NSEI")
 
-                # # get the latest market price
-                # nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
-
-                # nifty_futures = 25019
-                # find and return the data
-                # print("SHOULD PRESS BUTTON NOW")
                 page_driver, data_list = find_and_return_table_no_button(page_driver)
-                # print(f"Length of data list: {len(data_list)}")
 
                 df_1 = build_dataframe(data_list)
-                # print("Building dataframe, now saving to csv") 
                 df_1.to_csv("raw_data_1unsliced.csv")
 
                 # slice the dataframe based on nifty
                 df_1 = slice_df(df_1, nifty_futures)
-                # print("Slicing dataframe")
+
                 # save to csv
                 filename = f"raw_data_{counter}.csv"
                 df_1.to_csv(filename)
@@ -714,6 +586,7 @@ def main():
                 # concat dfs
                 df_roc = pd.concat([df_roc, changes], ignore_index = True)
                 st.write(f"ROC update: {counter}")
+                
                 # put in ascending order of strike price and time
                 df_roc = df_roc.sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, True])
 
