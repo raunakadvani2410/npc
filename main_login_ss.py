@@ -633,10 +633,6 @@ def main():
                 # update counter
                 counter+=1
 
-                # create a copy of the second dataframe to assign it to the earlier one
-                df = df_1.copy()
-                del df_1
-
                 time_end = datetime.now()
                 print(f"Time taken: {time_end - time_start}")
 
