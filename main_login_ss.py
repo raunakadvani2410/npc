@@ -608,7 +608,34 @@ def main():
                 # For each tab/strike price
                 for tab, strike in zip(tabs, unique_strikes):
                     with tab:
-                        # Filter data for this strike price
+                        # Show reference data (original data) at the top
+                        st.subheader(f"Reference Data (t0) - Strike {int(strike)}")
+                        
+                        # Get original data for this strike price
+                        reference_data = df[df['strike_price'] == strike].copy()
+                        
+                        # Rename columns to match display format
+                        reference_data = reference_data.rename(columns={
+                            "volume_calls": "Volume (Calls)",
+                            "oi_lakhs_calls": "OI Lakhs (Calls)",
+                            "ltp_calls": "LTP (Calls)",
+                            "strike_price": "Strike Price",
+                            "iv": "IV",
+                            "ltp_puts": "LTP (Puts)",
+                            "oi_lakh_puts": "OI Lakhs (Puts)",
+                            "volume_puts": "Volume (Puts)",
+                            "time": "Time"
+                        })
+                        
+                        # Display reference data (no styling, just raw values)
+                        st.dataframe(reference_data, height=100, use_container_width=True)
+                        
+                        st.divider()  # Visual separator
+                        
+                        # Now show ROC data
+                        st.subheader(f"Rate of Change - Strike {int(strike)}")
+                        
+                        # Filter ROC data for this strike price
                         strike_data = df_roc[df_roc['Strike Price'] == strike]
                         
                         # Sort by time within each strike price
@@ -623,7 +650,7 @@ def main():
                         )
                         
                         # Display the styled dataframe for this strike price
-                        st.dataframe(s2, height=500)
+                        st.dataframe(s2, height=500, use_container_width=True)
 
                 # print time
                 now = datetime.now(IST)
