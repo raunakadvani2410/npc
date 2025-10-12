@@ -551,7 +551,7 @@ def main():
 
     with st.empty():
         try:
-            while is_time_between(time(7,50), time(15,30)):
+            while is_time_between(time(2,50), time(15,30)):
                 time_start = datetime.now()
                 # get the current nifty futures value
 
@@ -609,7 +609,7 @@ def main():
                 for tab, strike in zip(tabs, unique_strikes):
                     with tab:
                         # Show reference data (original data) at the top
-                        st.subheader(f"Reference Data (t0) - Strike {int(strike)}")
+                        st.subheader(f"Reference Data (t0)")
                         
                         # Get original data for this strike price
                         reference_data = df[df['strike_price'] == strike].copy()
@@ -631,10 +631,7 @@ def main():
                         st.dataframe(reference_data, height=100, use_container_width=True)
                         
                         st.divider()  # Visual separator
-                        
-                        # Now show ROC data
-                        st.subheader(f"Rate of Change - Strike {int(strike)}")
-                        
+                                                
                         # Filter ROC data for this strike price
                         strike_data = df_roc[df_roc['Strike Price'] == strike]
                         
