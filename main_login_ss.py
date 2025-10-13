@@ -455,7 +455,7 @@ def calculate_roc(df):
 
     # rearrange columns
     df_roc = df_roc.reindex(columns = ['Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)','IV', 'COI/VOL (Calls)',
-                                       'Strike Price', 'COI/VOL (Puts)', 'Volume (Puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)', 'Time (ROC)'])
+                                       'Strike Price', 'COI/VOL (Puts)', 'LTP (Puts)', 'OI Lakhs (Puts)', 'Volume (Puts)', 'Remarks (Puts)', 'Time (ROC)'])
 
     return df_roc
 
@@ -613,7 +613,7 @@ def main():
                         # Get original data for this strike price
                         reference_data = df[df['strike_price'] == strike].copy()
                         
-                        # Rename columns to match display format
+                        # Rename columns to match ROC display format
                         reference_data = reference_data.rename(columns={
                             "volume_calls": "Volume (Calls)",
                             "oi_lakhs_calls": "OI Lakhs (Calls)",
@@ -623,9 +623,21 @@ def main():
                             "ltp_puts": "LTP (Puts)",
                             "oi_lakh_puts": "OI Lakhs (Puts)",
                             "volume_puts": "Volume (Puts)",
-                            "time": "Time"
+                            "time": "Time (t0)" 
                         })
                         
+                        # Add missing columns that exist in ROC table
+                        reference_data['Remarks (Calls)'] = 'NA'
+                        reference_data['Remarks (Puts)'] = 'NA'
+                        reference_data['COI/VOL (Calls)'] = reference_data['OI Lakhs (Calls)'] / reference_data['Volume (Calls)']
+                        reference_data['COI/VOL (Puts)'] = reference_data['OI Lakhs (Puts)'] / reference_data['Volume (Puts)']
+
+                        # Reorder columns to match ROC table exactly
+                        reference_data = reference_data.reindex(columns=[
+                            'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
+                            'Strike Price', 'COI/VOL (Puts)', 'LTP (Puts)', 'OI Lakhs (Puts)', 'Volume (Puts)', 'Remarks (Puts)', 'Time (ROC)'
+                        ])
+
                         # Display reference data (no styling, just raw values)
                         st.dataframe(reference_data, height=100, width='stretch')
                         
