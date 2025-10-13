@@ -201,7 +201,6 @@ def get_otp_from_flask():
 
             # Send a GET request to retrieve the OTP
             response = requests.get(url)
-            print(type(response))
             if response.status_code == 200:
                 data = response.json()
                 otp = data.get('otp')
@@ -628,7 +627,7 @@ def main():
                         })
                         
                         # Display reference data (no styling, just raw values)
-                        st.dataframe(reference_data, height=100, use_container_width=True)
+                        st.dataframe(reference_data, height=100, width='stretch')
                         
                         st.divider()  # Visual separator
                                                 
@@ -647,7 +646,7 @@ def main():
                         )
                         
                         # Display the styled dataframe for this strike price
-                        st.dataframe(s2, height=500, use_container_width=True)
+                        st.dataframe(s2, height=500, width='stretch')
 
                 # print time
                 now = datetime.now(IST)
