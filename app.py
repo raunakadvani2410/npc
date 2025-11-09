@@ -201,7 +201,7 @@ def start_scraping():
 
 @app.route('/api/stop', methods=['POST'])
 def stop_scraping():
-    if app_state.state not in ['LOGGING_IN', 'WAITING_FOR_OTP', 'SCRAPING']:
+    if app_state.state not in ['LOGGING_IN', 'WAITING_FOR_OTP', 'OTP_SUBMITTED', 'SCRAPING']:
         return jsonify({'error': f'Cannot stop: current state is {app_state.state}'}), 400
     
     app_state.add_log("Stop button clicked")
@@ -254,6 +254,10 @@ def submit_otp_api():
     try:
         app_state.driver = submit_otp(app_state.driver, otp)
         app_state.add_log("OTP submitted successfully to Zerodha")
+        
+        # Change state to signal the scraping loop to continue
+        app_state.set_state('OTP_SUBMITTED')
+        
         return jsonify({'status': 'otp_submitted'})
     except Exception as e:
         error_msg = f"Failed to submit OTP: {str(e)}"

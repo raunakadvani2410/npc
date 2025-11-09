@@ -132,14 +132,15 @@ function updateUIState(status) {
     
     // Update button states
     startBtn.disabled = !['IDLE', 'ERROR', 'STOPPED'].includes(status.state);
-    stopBtn.disabled = !['LOGGING_IN', 'WAITING_FOR_OTP', 'SCRAPING'].includes(status.state);
+    stopBtn.disabled = !['LOGGING_IN', 'WAITING_FOR_OTP', 'OTP_SUBMITTED', 'SCRAPING'].includes(status.state);
     
-    // Show/hide OTP input
+    // Show/hide OTP input (only show when waiting for OTP)
     if (status.state === 'WAITING_FOR_OTP') {
         otpContainer.style.display = 'block';
         otpInput.focus();
     } else {
         otpContainer.style.display = 'none';
+        otpInput.value = '';  // Clear OTP input when hidden
     }
     
     // Show/hide error
@@ -161,6 +162,7 @@ function formatStateName(state) {
         'IDLE': 'Idle',
         'LOGGING_IN': 'Logging in...',
         'WAITING_FOR_OTP': 'Waiting for OTP',
+        'OTP_SUBMITTED': 'Processing login...',
         'SCRAPING': 'Scraping',
         'ERROR': 'Error',
         'STOPPED': 'Stopped'
