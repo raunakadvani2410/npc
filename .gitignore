@@ -1,0 +1,16 @@
+*.env
+*.csv
+*.json
+*.log
+*.txt
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.db
+*.sqlite3
+*.sqlite
+*.sqlite3
+chromedriver
