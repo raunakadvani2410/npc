@@ -578,12 +578,12 @@ def main():
                 earlier_time = min(unique_times)
                 all_data = all_data[all_data['time'] != earlier_time]
 
-                # concat dfs
-                df_roc = pd.concat([df_roc, changes], ignore_index = True)
+                # concat dfs (prepend new data so most recent is at top)
+                df_roc = pd.concat([changes, df_roc], ignore_index = True)
                 st.write(f"ROC update: {counter}")
 
-                # put in ascending order of strike price and time
-                df_roc = df_roc.sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, True])
+                # put in ascending order of strike price, descending order of time (most recent first)
+                df_roc = df_roc.sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, False])
 
                 # save df
                 df_roc.to_csv("rates_of_change.csv")
@@ -646,8 +646,8 @@ def main():
                         # Filter ROC data for this strike price
                         strike_data = df_roc[df_roc['Strike Price'] == strike]
                         
-                        # Sort by time within each strike price
-                        strike_data = strike_data.sort_values('Time (ROC)', ascending=True)
+                        # Sort by time within each strike price (most recent first)
+                        strike_data = strike_data.sort_values('Time (ROC)', ascending=False)
                         
                         # Apply your original styling to the filtered data
                         s2 = strike_data.style.map(
