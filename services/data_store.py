@@ -93,6 +93,9 @@ class AppState:
                 for key, value in record.items():
                     if pd.isna(value) or value == float('inf') or value == float('-inf'):
                         cleaned[key] = None
+                    elif key == 'Time (ROC)' and pd.notna(value):
+                        # Format time consistently as DD/MM/YYYY HH:MM:SS
+                        cleaned[key] = pd.to_datetime(value).strftime("%d/%m/%Y %H:%M:%S")
                     else:
                         cleaned[key] = value
                 cleaned_records.append(cleaned)

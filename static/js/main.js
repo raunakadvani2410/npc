@@ -13,7 +13,6 @@ const otpInput = document.getElementById('otp-input');
 const submitOtpBtn = document.getElementById('submit-otp-btn');
 const statusText = document.getElementById('status-text');
 const updateCounter = document.getElementById('update-counter');
-const lastUpdate = document.getElementById('last-update');
 const logsContainer = document.getElementById('logs-container');
 const errorContainer = document.getElementById('error-container');
 const errorMessage = document.getElementById('error-message');
@@ -129,7 +128,6 @@ function updateUIState(status) {
     
     // Update counters
     updateCounter.textContent = status.counter || 0;
-    lastUpdate.textContent = status.last_update || '-';
     
     // If we just entered SCRAPING state, fetch data immediately
     if (currentState === 'SCRAPING' && previousState !== 'SCRAPING') {
@@ -330,7 +328,13 @@ function updateTabContent(strike) {
 function buildTable(data, applyColorCoding) {
     if (data.length === 0) return '';
     
-    const columns = Object.keys(data[0]);
+    // Define column order explicitly (not alphabetical)
+    const columns = [
+        'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
+        'Strike Price', 'COI/VOL (Puts)', 'Volume (Puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)',
+        'Time (ROC)', 'Time (t0)'
+    ].filter(col => col in data[0]); // Only include columns that exist in the data
+    
     const columnsToStyle = [
         'Volume (Calls)',
         'OI Lakhs (Calls)',
