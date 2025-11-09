@@ -1,29 +1,20 @@
-print("Starting imports...")
 from flask import Flask, render_template, request, jsonify
-print("Flask imported")
 import threading
 import time
 import os
 import sys
-print("Basic imports done")
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, time as dt_time
 import pytz
 from pyvirtualdisplay import Display
-print("Third-party imports done")
 
 from services.data_store import app_state
-print("data_store imported")
 from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
-print("scraper imported")
 from services.data_processor import build_dataframe, slice_df, calculate_roc
-print("data_processor imported")
 from config import SENSIBULL_URL, NIFTY_TICKER, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
-print("config imported")
 
 app = Flask(__name__)
-print("Flask app created")
 
 # Virtual display for headless Selenium
 display = None
@@ -288,32 +279,27 @@ def get_reference():
 
 
 if __name__ == '__main__':
-    print("=" * 50)
-    print("Flask app starting...")
-    print("=" * 50)
-    
     try:
-        print("Resetting app state...")
+        print("Flask app starting...", flush=True)
+        sys.stdout.flush()
+        
         # Reset app state on startup
         app_state.reset()
         app_state.add_log("Flask app started")
-        print("App state reset complete")
-    except Exception as e:
-        print(f"Warning: Error during app state reset: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    # Disable debug mode in production (set via environment variable)
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    print(f"Starting Flask on port 8501 (debug={debug_mode})")
-    print("Flask server starting...")
-    sys.stdout.flush()  # Force output
-    
-    try:
+        
+        # Disable debug mode in production (set via environment variable)
+        debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+        print(f"Starting Flask on port 8501 (debug={debug_mode})", flush=True)
+        sys.stdout.flush()
+        
         app.run(debug=debug_mode, host='0.0.0.0', port=8501, threaded=True, use_reloader=False)
+    except KeyboardInterrupt:
+        print("Flask app stopped by user", flush=True)
+        sys.exit(0)
     except Exception as e:
-        print(f"Fatal error starting Flask: {e}")
+        print(f"Fatal error: {e}", flush=True)
         import traceback
         traceback.print_exc()
-        raise
+        sys.stderr.flush()
+        sys.exit(1)
 
