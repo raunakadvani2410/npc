@@ -26,8 +26,8 @@ class AppState:
         self.logs = []
         self.error_message = None
         
-        # Thread lock for thread-safe operations
-        self.lock = threading.Lock()
+        # Thread lock for thread-safe operations (RLock allows reentrant locking)
+        self.lock = threading.RLock()
     
     def add_log(self, message):
         with self.lock:
