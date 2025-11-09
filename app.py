@@ -1,9 +1,13 @@
 from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
 import threading
 import time
 import os
 import sys
 import yfinance as yf
+
+# Load environment variables from .env file
+load_dotenv()
 import pandas as pd
 from datetime import datetime, time as dt_time
 import pytz
