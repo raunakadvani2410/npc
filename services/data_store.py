@@ -84,11 +84,19 @@ class AppState:
         with self.lock:
             if self.df_roc.empty:
                 return None
-            # Replace NaN and Infinity with None for JSON serialization
-            df_clean = self.df_roc.replace([float('inf'), float('-inf')], None)
-            df_clean = df_clean.where(pd.notna(df_clean), None)
-            # Convert to dict with records orientation for JSON serialization
-            return df_clean.to_dict('records')
+            # Convert to dict first, then clean NaN/Inf values
+            records = self.df_roc.to_dict('records')
+            # Clean each record to replace NaN and Infinity with None
+            cleaned_records = []
+            for record in records:
+                cleaned = {}
+                for key, value in record.items():
+                    if pd.isna(value) or value == float('inf') or value == float('-inf'):
+                        cleaned[key] = None
+                    else:
+                        cleaned[key] = value
+                cleaned_records.append(cleaned)
+            return cleaned_records
     
     def get_reference_data(self):
         with self.lock:
@@ -119,11 +127,20 @@ class AppState:
                 'Strike Price', 'COI/VOL (Puts)', 'LTP (Puts)', 'OI Lakhs (Puts)', 'Volume (Puts)', 'Remarks (Puts)', 'Time (t0)'
             ])
             
-            # Replace NaN and Infinity with None for JSON serialization
-            reference_data = reference_data.replace([float('inf'), float('-inf')], None)
-            reference_data = reference_data.where(pd.notna(reference_data), None)
+            # Convert to dict first, then clean NaN/Inf values
+            records = reference_data.to_dict('records')
+            # Clean each record to replace NaN and Infinity with None
+            cleaned_records = []
+            for record in records:
+                cleaned = {}
+                for key, value in record.items():
+                    if pd.isna(value) or value == float('inf') or value == float('-inf'):
+                        cleaned[key] = None
+                    else:
+                        cleaned[key] = value
+                cleaned_records.append(cleaned)
             
-            return reference_data.to_dict('records')
+            return cleaned_records
 
 
 # Global app state instance
