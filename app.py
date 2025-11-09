@@ -163,6 +163,9 @@ def cleanup():
             app_state.add_log(f"Error stopping display: {e}")
         display = None
     
+    # Reset should_stop flag for next run
+    app_state.should_stop = False
+    
     if app_state.state not in ['ERROR', 'STOPPED']:
         app_state.set_state('STOPPED')
 
@@ -174,8 +177,12 @@ def home():
 
 @app.route('/api/start', methods=['POST'])
 def start_scraping():
-    if app_state.state != 'IDLE':
+    if app_state.state not in ['IDLE', 'ERROR', 'STOPPED']:
         return jsonify({'error': f'Cannot start: current state is {app_state.state}'}), 400
+    
+    # Reset state if coming from ERROR or STOPPED
+    if app_state.state in ['ERROR', 'STOPPED']:
+        app_state.reset()
     
     app_state.add_log("Start button clicked")
     
@@ -201,6 +208,28 @@ def stop_scraping():
     app_state.reset()
     
     return jsonify({'status': 'stopped'})
+
+
+@app.route('/api/reset', methods=['POST'])
+def reset_state():
+    """Force reset the app state - useful if app is stuck"""
+    app_state.add_log("Force reset requested")
+    
+    # Try to stop any running thread
+    if app_state.scraping_thread and app_state.scraping_thread.is_alive():
+        app_state.should_stop = True
+        app_state.scraping_thread.join(timeout=3)
+    
+    # Force cleanup
+    try:
+        cleanup()
+    except:
+        pass
+    
+    # Reset state
+    app_state.reset()
+    
+    return jsonify({'status': 'reset_complete'})
 
 
 @app.route('/api/submit_otp', methods=['POST'])
@@ -248,5 +277,9 @@ def get_reference():
 
 
 if __name__ == '__main__':
+    # Reset app state on startup
+    app_state.reset()
+    app_state.add_log("Flask app started")
+    
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
 

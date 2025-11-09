@@ -67,6 +67,15 @@ body {
     background-color: #ff4b4b;
 }
 
+.btn-warning {
+    background-color: #ffa726;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background-color: #fb8c00;
+}
+
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;

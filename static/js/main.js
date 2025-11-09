@@ -7,6 +7,7 @@ let referenceData = [];
 // DOM Elements
 const startBtn = document.getElementById('start-btn');
 const stopBtn = document.getElementById('stop-btn');
+const resetBtn = document.getElementById('reset-btn');
 const otpContainer = document.getElementById('otp-container');
 const otpInput = document.getElementById('otp-input');
 const submitOtpBtn = document.getElementById('submit-otp-btn');
@@ -23,6 +24,7 @@ const tabsContent = document.getElementById('tabs-content');
 // Event Listeners
 startBtn.addEventListener('click', handleStart);
 stopBtn.addEventListener('click', handleStop);
+resetBtn.addEventListener('click', handleReset);
 submitOtpBtn.addEventListener('click', handleSubmitOtp);
 
 // Enter key on OTP input
@@ -79,6 +81,26 @@ async function handleStop() {
     }
 }
 
+async function handleReset() {
+    if (!confirm('Are you sure you want to reset the app? This will stop any running processes.')) {
+        return;
+    }
+    
+    try {
+        await apiCall('reset', 'POST');
+        console.log('App reset');
+        // Clear local state
+        rocData = [];
+        referenceData = [];
+        currentTab = null;
+        tabsContainer.style.display = 'none';
+        tabsHeader.innerHTML = '';
+        tabsContent.innerHTML = '';
+    } catch (error) {
+        alert(`Failed to reset: ${error.message}`);
+    }
+}
+
 async function handleSubmitOtp() {
     const otp = otpInput.value.trim();
     
@@ -109,7 +131,7 @@ function updateUIState(status) {
     lastUpdate.textContent = status.last_update || '-';
     
     // Update button states
-    startBtn.disabled = status.state !== 'IDLE';
+    startBtn.disabled = !['IDLE', 'ERROR', 'STOPPED'].includes(status.state);
     stopBtn.disabled = !['LOGGING_IN', 'WAITING_FOR_OTP', 'SCRAPING'].includes(status.state);
     
     // Show/hide OTP input
