@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import threading
 import time
+import os
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, time as dt_time
@@ -281,5 +282,7 @@ if __name__ == '__main__':
     app_state.reset()
     app_state.add_log("Flask app started")
     
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    # Disable debug mode in production (set via environment variable)
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=8501, threaded=True, use_reloader=False)
 
