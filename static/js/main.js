@@ -120,6 +120,7 @@ async function handleSubmitOtp() {
 
 // State Management
 function updateUIState(status) {
+    const previousState = currentState;
     currentState = status.state;
     
     // Update status text
@@ -129,6 +130,12 @@ function updateUIState(status) {
     // Update counters
     updateCounter.textContent = status.counter || 0;
     lastUpdate.textContent = status.last_update || '-';
+    
+    // If we just entered SCRAPING state, fetch data immediately
+    if (currentState === 'SCRAPING' && previousState !== 'SCRAPING') {
+        console.log('Entered SCRAPING state, fetching data immediately');
+        fetchData();
+    }
     
     // Update button states
     startBtn.disabled = !['IDLE', 'ERROR', 'STOPPED'].includes(status.state);
@@ -194,8 +201,13 @@ async function fetchData() {
         rocData = roc || [];
         referenceData = reference || [];
         
+        console.log('Fetched data:', { rocLength: rocData.length, refLength: referenceData.length });
+        
         if (rocData.length > 0) {
+            console.log('Rendering tables with', rocData.length, 'rows');
             renderTables();
+        } else {
+            console.log('No ROC data to display yet');
         }
     } catch (error) {
         console.error('Failed to fetch data:', error);

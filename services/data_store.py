@@ -84,8 +84,11 @@ class AppState:
         with self.lock:
             if self.df_roc.empty:
                 return None
+            # Replace NaN and Infinity with None for JSON serialization
+            df_clean = self.df_roc.replace([float('inf'), float('-inf')], None)
+            df_clean = df_clean.where(pd.notna(df_clean), None)
             # Convert to dict with records orientation for JSON serialization
-            return self.df_roc.to_dict('records')
+            return df_clean.to_dict('records')
     
     def get_reference_data(self):
         with self.lock:
@@ -115,6 +118,10 @@ class AppState:
                 'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
                 'Strike Price', 'COI/VOL (Puts)', 'LTP (Puts)', 'OI Lakhs (Puts)', 'Volume (Puts)', 'Remarks (Puts)', 'Time (t0)'
             ])
+            
+            # Replace NaN and Infinity with None for JSON serialization
+            reference_data = reference_data.replace([float('inf'), float('-inf')], None)
+            reference_data = reference_data.where(pd.notna(reference_data), None)
             
             return reference_data.to_dict('records')
 
