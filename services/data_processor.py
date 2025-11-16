@@ -54,8 +54,9 @@ def build_dataframe(data_list):
     return df
 
 
-def slice_df(df, nifty_futures):
-    central_strike = round(nifty_futures / 100) * 100
+def slice_df(df, underlying_price):
+    """Slice dataframe to keep only strikes around the underlying price (ATM)"""
+    central_strike = round(underlying_price / 100) * 100
     strike_prices_to_keep = [central_strike + i * STRIKE_INTERVAL for i in range(-STRIKE_RANGE, STRIKE_RANGE)]
     df = df[df['strike_price'].isin(strike_prices_to_keep)]
     df = df.reset_index(drop=True)

@@ -1,6 +1,13 @@
 // State
 let currentState = 'IDLE';
+let currentSymbol = 'NIFTY';  // Default symbol
 let currentTab = null;
+let activeSymbols = ['NIFTY'];  // Default
+let symbolData = {
+    'NIFTY': { rocData: [], referenceData: [] }
+};
+
+// Legacy state for backward compatibility
 let rocData = [];
 let referenceData = [];
 
@@ -19,6 +26,12 @@ const errorMessage = document.getElementById('error-message');
 const tabsContainer = document.getElementById('tabs-container');
 const tabsHeader = document.getElementById('tabs-header');
 const tabsContent = document.getElementById('tabs-content');
+
+// Symbol input elements
+const symbolInputContainer = document.getElementById('symbol-input-container');
+const niftyExpiryInput = document.getElementById('nifty-expiry-input');
+const equitySymbolInput = document.getElementById('equity-symbol-input');
+const equityExpiryInput = document.getElementById('equity-expiry-input');
 
 // Event Listeners
 startBtn.addEventListener('click', handleStart);
@@ -64,8 +77,42 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 // Event Handlers
 async function handleStart() {
     try {
-        await apiCall('start', 'POST');
+        // Get symbol configuration
+        const niftyExpiry = niftyExpiryInput.value;
+        const equitySymbol = equitySymbolInput.value.trim().toUpperCase();
+        const equityExpiry = equityExpiryInput.value;
+        
+        // Validate equity inputs
+        if (equitySymbol && !equityExpiry) {
+            alert('Please enter expiry date for equity symbol');
+            return;
+        }
+        
+        // Build payload
+        const payload = { nifty_expiry: niftyExpiry };
+        
+        if (equitySymbol && equityExpiry) {
+            payload.equity_symbol = equitySymbol;
+            payload.equity_expiry = equityExpiry;
+            activeSymbols = ['NIFTY', equitySymbol];
+            // Initialize symbol data structure
+            symbolData = {
+                'NIFTY': { rocData: [], referenceData: [] },
+                [equitySymbol]: { rocData: [], referenceData: [] }
+            };
+        } else {
+            activeSymbols = ['NIFTY'];
+            symbolData = {
+                'NIFTY': { rocData: [], referenceData: [] }
+            };
+        }
+        
+        await apiCall('start', 'POST', payload);
         console.log('Scraping started');
+        
+        // Hide symbol input container
+        symbolInputContainer.style.display = 'none';
+        
     } catch (error) {
         alert(`Failed to start: ${error.message}`);
     }
@@ -88,13 +135,36 @@ async function handleReset() {
     try {
         await apiCall('reset', 'POST');
         console.log('App reset');
-        // Clear local state
+        
+        // Clear multi-symbol state
+        activeSymbols = ['NIFTY'];
+        currentSymbol = 'NIFTY';
+        symbolData = {
+            'NIFTY': { rocData: [], referenceData: [] }
+        };
+        
+        // Clear legacy state
         rocData = [];
         referenceData = [];
         currentTab = null;
+        
+        // Clear UI
         tabsContainer.style.display = 'none';
         tabsHeader.innerHTML = '';
         tabsContent.innerHTML = '';
+        
+        // Remove symbol tabs if they exist
+        const existingSymbolTabs = document.querySelector('.symbol-tabs');
+        if (existingSymbolTabs) {
+            existingSymbolTabs.remove();
+        }
+        
+        // Show symbol input container
+        symbolInputContainer.style.display = 'block';
+        
+        // Reset input values
+        equitySymbolInput.value = '';
+        equityExpiryInput.value = '';
     } catch (error) {
         alert(`Failed to reset: ${error.message}`);
     }
@@ -138,6 +208,13 @@ function updateUIState(status) {
     // Update button states
     startBtn.disabled = !['IDLE', 'ERROR', 'STOPPED'].includes(status.state);
     stopBtn.disabled = !['LOGGING_IN', 'WAITING_FOR_OTP', 'OTP_SUBMITTED', 'SCRAPING'].includes(status.state);
+    
+    // Show/hide symbol input container (only show when IDLE)
+    if (status.state === 'IDLE') {
+        symbolInputContainer.style.display = 'block';
+    } else {
+        symbolInputContainer.style.display = 'none';
+    }
     
     // Show/hide OTP input (only show when waiting for OTP)
     if (status.state === 'WAITING_FOR_OTP') {
@@ -191,31 +268,122 @@ async function fetchData() {
     }
     
     try {
-        const [roc, reference] = await Promise.all([
-            apiCall('roc'),
-            apiCall('reference')
-        ]);
+        // Fetch symbols list first
+        const symbolsResponse = await apiCall('symbols');
+        activeSymbols = symbolsResponse.symbols || ['NIFTY'];
         
-        rocData = roc || [];
-        referenceData = reference || [];
+        // Fetch data for each symbol
+        for (const symbol of activeSymbols) {
+            try {
+                const [roc, reference] = await Promise.all([
+                    apiCall(`roc/${symbol}`),
+                    apiCall(`reference/${symbol}`)
+                ]);
+                
+                // Store in symbol-specific data structure
+                if (!symbolData[symbol]) {
+                    symbolData[symbol] = {};
+                }
+                symbolData[symbol].rocData = roc || [];
+                symbolData[symbol].referenceData = reference || [];
+                
+                console.log(`Fetched data for ${symbol}:`, { 
+                    rocLength: symbolData[symbol].rocData.length, 
+                    refLength: symbolData[symbol].referenceData.length 
+                });
+            } catch (error) {
+                console.error(`Error fetching data for ${symbol}:`, error);
+                // Continue with other symbols
+            }
+        }
         
-        console.log('Fetched data:', { rocLength: rocData.length, refLength: referenceData.length });
+        // Update legacy state for current symbol (backward compatibility)
+        if (symbolData[currentSymbol]) {
+            rocData = symbolData[currentSymbol].rocData;
+            referenceData = symbolData[currentSymbol].referenceData;
+        }
         
-        if (rocData.length > 0) {
-            console.log('Rendering tables with', rocData.length, 'rows');
-            renderTables();
+        // Render UI
+        renderSymbolTabs();
+        
+        if (symbolData[currentSymbol] && symbolData[currentSymbol].rocData.length > 0) {
+            console.log('Rendering tables for', currentSymbol, 'with', symbolData[currentSymbol].rocData.length, 'rows');
+            renderTables(currentSymbol);
         } else {
-            console.log('No ROC data to display yet');
+            console.log(`No ROC data to display yet for ${currentSymbol}`);
         }
     } catch (error) {
         console.error('Failed to fetch data:', error);
     }
 }
 
+// Symbol Tab Rendering
+function renderSymbolTabs() {
+    if (activeSymbols.length <= 1) {
+        // Only one symbol, no need for symbol tabs
+        const existingSymbolTabs = document.querySelector('.symbol-tabs');
+        if (existingSymbolTabs) {
+            existingSymbolTabs.remove();
+        }
+        return;
+    }
+    
+    // Create top-level symbol tabs
+    let symbolTabsHTML = '<div class="symbol-tabs">';
+    activeSymbols.forEach(symbol => {
+        const activeClass = symbol === currentSymbol ? 'active' : '';
+        symbolTabsHTML += `<button class="symbol-tab ${activeClass}" data-symbol="${symbol}">${symbol}</button>`;
+    });
+    symbolTabsHTML += '</div>';
+    
+    // Insert before tabs-header or at start of tabs-container
+    const existingSymbolTabs = document.querySelector('.symbol-tabs');
+    if (existingSymbolTabs) {
+        existingSymbolTabs.remove();
+    }
+    
+    tabsContainer.insertAdjacentHTML('afterbegin', symbolTabsHTML);
+    
+    // Add click handlers
+    document.querySelectorAll('.symbol-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchSymbol(btn.dataset.symbol));
+    });
+}
+
+function switchSymbol(symbol) {
+    currentSymbol = symbol;
+    
+    // Update symbol tab styling
+    document.querySelectorAll('.symbol-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.symbol === symbol);
+    });
+    
+    // Update legacy state
+    if (symbolData[symbol]) {
+        rocData = symbolData[symbol].rocData;
+        referenceData = symbolData[symbol].referenceData;
+    }
+    
+    // Re-render tables for new symbol
+    renderTables(symbol);
+}
+
 // Table Rendering
-function renderTables() {
+function renderTables(symbol) {
+    symbol = symbol || currentSymbol;
+    const data = symbolData[symbol];
+    
+    if (!data || !data.rocData || data.rocData.length === 0) {
+        console.log(`No data available for ${symbol}`);
+        return;
+    }
+    
+    // Use symbol-specific data
+    const symbolRocData = data.rocData;
+    const symbolRefData = data.referenceData;
+    
     // Get unique strike prices
-    const strikes = [...new Set(rocData.map(row => row['Strike Price']))].sort((a, b) => a - b);
+    const strikes = [...new Set(symbolRocData.map(row => row['Strike Price']))].sort((a, b) => a - b);
     
     if (strikes.length === 0) {
         return;
@@ -298,9 +466,16 @@ function updateTabContent(strike) {
     const tabContentDiv = document.querySelector(`.tab-content[data-strike="${strike}"]`);
     if (!tabContentDiv) return;
     
+    // Get data for current symbol
+    const data = symbolData[currentSymbol];
+    if (!data) return;
+    
+    const symbolRocData = data.rocData || [];
+    const symbolRefData = data.referenceData || [];
+    
     // Filter data for this strike
-    const referenceForStrike = referenceData.filter(row => row['Strike Price'] === strike);
-    const rocForStrike = rocData.filter(row => row['Strike Price'] === strike)
+    const referenceForStrike = symbolRefData.filter(row => row['Strike Price'] === strike);
+    const rocForStrike = symbolRocData.filter(row => row['Strike Price'] === strike)
         .sort((a, b) => new Date(b['Time (ROC)']) - new Date(a['Time (ROC)']));
     
     // Build HTML

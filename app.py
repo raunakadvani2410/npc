@@ -14,9 +14,9 @@ import pytz
 from pyvirtualdisplay import Display
 
 from services.data_store import app_state
-from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
+from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, navigate_to_symbol
 from services.data_processor import build_dataframe, slice_df, calculate_roc
-from config import SENSIBULL_URL, NIFTY_TICKER, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
+from config import SENSIBULL_URL, NIFTY_TICKER, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS, build_sensibull_url, DEFAULT_NIFTY_EXPIRY
 
 app = Flask(__name__)
 
@@ -49,7 +49,10 @@ def scraping_loop():
         # State: LOGGING_IN
         app_state.set_state('LOGGING_IN')
         app_state.add_log("Entering Sensibull webpage")
-        app_state.driver = enter_webpage(SENSIBULL_URL)
+        
+        # Use NIFTY URL for initial login (will navigate to other symbols later)
+        initial_url = build_sensibull_url('NIFTY', app_state.nifty_expiry or DEFAULT_NIFTY_EXPIRY)
+        app_state.driver = enter_webpage(initial_url)
         
         app_state.add_log("Entering login credentials")
         app_state.driver = login(app_state.driver)
@@ -72,67 +75,106 @@ def scraping_loop():
         app_state.add_log("OTP submitted, waiting for login to complete")
         time.sleep(15)
         
-        # Get initial data
-        app_state.add_log("Fetching initial data")
+        # Initialize symbols
+        app_state.add_log("Initializing symbol tracking")
         
-        # Get Nifty futures value
-        nifty = yf.Ticker(NIFTY_TICKER)
-        app_state.nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
-        app_state.add_log(f"Nifty futures: {app_state.nifty_futures}")
+        # Always add NIFTY
+        nifty_url = build_sensibull_url('NIFTY', app_state.nifty_expiry or DEFAULT_NIFTY_EXPIRY)
+        app_state.add_symbol('NIFTY', nifty_url)
         
-        app_state.driver, data_list = find_and_return_table(app_state.driver)
-        app_state.df = build_dataframe(data_list)
-        app_state.df = slice_df(app_state.df, app_state.nifty_futures)
+        # Add equity symbol if provided
+        if app_state.equity_symbol and app_state.equity_expiry:
+            equity_url = build_sensibull_url(app_state.equity_symbol, app_state.equity_expiry)
+            app_state.add_symbol(app_state.equity_symbol, equity_url)
         
-        app_state.add_log("Initial data fetched successfully")
+        # Get initial data for all symbols
+        app_state.add_log("Fetching initial data for all symbols")
+        
+        for symbol in app_state.active_symbols:
+            try:
+                symbol_data = app_state.symbols[symbol]
+                
+                # Navigate to symbol's page
+                app_state.driver = navigate_to_symbol(app_state.driver, symbol_data['url'])
+                
+                # Get underlying price
+                if symbol == 'NIFTY':
+                    ticker = yf.Ticker(NIFTY_TICKER)
+                    underlying_price = ticker.history(period="1d")['Close'].iloc[-1]
+                else:
+                    # For equity, construct ticker symbol (NSE: symbol.NS)
+                    ticker = yf.Ticker(f"{symbol}.NS")
+                    underlying_price = ticker.history(period="1d")['Close'].iloc[-1]
+                
+                app_state.symbols[symbol]['underlying_price'] = underlying_price
+                app_state.add_log(f"{symbol} price: {underlying_price}")
+                
+                # Scrape table
+                app_state.driver, data_list = find_and_return_table(app_state.driver)
+                df = build_dataframe(data_list)
+                df = slice_df(df, underlying_price)
+                
+                app_state.symbols[symbol]['df'] = df
+                app_state.add_log(f"Initial data for {symbol} fetched successfully")
+                
+            except Exception as e:
+                app_state.add_log(f"Error initializing {symbol}: {e}")
+                # Continue with other symbols even if one fails
+                continue
+        
         app_state.add_log(f"Waiting {INITIAL_WAIT_SECONDS} seconds before first update")
         time.sleep(INITIAL_WAIT_SECONDS)
         
         # State: SCRAPING
         app_state.set_state('SCRAPING')
         
-        # Main scraping loop
+        # Main scraping loop - sequential scraping of all symbols
         while not app_state.should_stop and is_time_between(dt_time(2, 50), dt_time(15, 30)):
-            try:
-                app_state.add_log(f"Fetching update #{app_state.counter + 1}")
+            for symbol in app_state.active_symbols:
+                if app_state.should_stop:
+                    break
                 
-                # Get new data
-                app_state.driver, data_list = find_and_return_table_no_button(app_state.driver)
-                df_1 = build_dataframe(data_list)
-                df_1 = slice_df(df_1, app_state.nifty_futures)
-                
-                # Calculate ROC
-                all_data = pd.concat([app_state.df, df_1], ignore_index=True)
-                changes = calculate_roc(all_data)
-                
-                # Update df_roc (prepend new data so most recent is at top)
-                with app_state.lock:
-                    app_state.df_roc = pd.concat([changes, app_state.df_roc], ignore_index=True)
-                    app_state.df_roc = app_state.df_roc.sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, False])
+                try:
+                    app_state.add_log(f"Fetching update for {symbol}")
+                    
+                    # Navigate to symbol
+                    app_state.driver = navigate_to_symbol(app_state.driver, app_state.symbols[symbol]['url'])
+                    
+                    # Scrape data
+                    app_state.driver, data_list = find_and_return_table(app_state.driver)
+                    df_new = build_dataframe(data_list)
+                    df_new = slice_df(df_new, app_state.symbols[symbol]['underlying_price'])
+                    
+                    # Calculate ROC
+                    df_old = app_state.symbols[symbol]['df']
+                    all_data = pd.concat([df_old, df_new], ignore_index=True)
+                    changes = calculate_roc(all_data)
+                    
+                    # Update state (prepend new data)
+                    with app_state.lock:
+                        app_state.symbols[symbol]['df_roc'] = pd.concat([changes, app_state.symbols[symbol]['df_roc']], ignore_index=True)
+                        app_state.symbols[symbol]['df_roc'] = app_state.symbols[symbol]['df_roc'].sort_values(['Strike Price', 'Time (ROC)'], ascending=[True, False])
+                        app_state.symbols[symbol]['last_scrape_time'] = datetime.now()
+                        
+                        # Remove old data from df (keep only last 2 time periods)
+                        unique_times = all_data['time'].unique()
+                        if len(unique_times) > 1:
+                            earlier_time = min(unique_times)
+                            all_data = all_data[all_data['time'] != earlier_time]
+                        app_state.symbols[symbol]['df'] = all_data
+                    
                     app_state.counter += 1
                     app_state.last_update = datetime.now()
-                
-                app_state.add_log(f"Update #{app_state.counter} completed successfully")
-                
-                # Remove earlier time data
-                unique_times = all_data['time'].unique()
-                earlier_time = min(unique_times)
-                all_data = all_data[all_data['time'] != earlier_time]
-                
-                # Save to CSV (optional)
-                try:
-                    app_state.df_roc.to_csv("rates_of_change.csv", index=False)
+                    app_state.add_log(f"Update for {symbol} completed (total updates: {app_state.counter})")
+                    
                 except Exception as e:
-                    app_state.add_log(f"Warning: Failed to save CSV: {e}")
-                
-                # Wait before next update
+                    app_state.add_log(f"Error scraping {symbol}: {str(e)}")
+                    # Continue with next symbol instead of stopping entirely
+                    continue
+            
+            # Wait before next cycle
+            if not app_state.should_stop:
                 time.sleep(SCRAPING_INTERVAL_SECONDS)
-                
-            except Exception as e:
-                error_msg = f"Error during scraping iteration: {str(e)}"
-                app_state.set_error(error_msg)
-                cleanup()
-                return
         
         # Exited loop - either stopped or outside trading hours
         if app_state.should_stop:
@@ -190,7 +232,22 @@ def start_scraping():
     if app_state.state in ['ERROR', 'STOPPED']:
         app_state.reset()
     
+    # Get symbol configuration from request
+    data = request.get_json() or {}
+    equity_symbol = data.get('equity_symbol', '').strip().upper()
+    equity_expiry = data.get('equity_expiry', '').strip()
+    nifty_expiry = data.get('nifty_expiry', DEFAULT_NIFTY_EXPIRY)
+    
+    # Store in app_state
+    app_state.equity_symbol = equity_symbol if equity_symbol else None
+    app_state.equity_expiry = equity_expiry if equity_expiry else None
+    app_state.nifty_expiry = nifty_expiry
+    
     app_state.add_log("Start button clicked")
+    if equity_symbol and equity_expiry:
+        app_state.add_log(f"Tracking NIFTY (expiry: {nifty_expiry}) and {equity_symbol} (expiry: {equity_expiry})")
+    else:
+        app_state.add_log(f"Tracking NIFTY only (expiry: {nifty_expiry})")
     
     # Start scraping in background thread
     app_state.scraping_thread = threading.Thread(target=scraping_loop, daemon=True)
@@ -270,17 +327,44 @@ def get_status():
     return jsonify(app_state.get_status())
 
 
+@app.route('/api/symbols', methods=['GET'])
+def get_active_symbols():
+    """Return list of active symbols being tracked"""
+    return jsonify({'symbols': app_state.active_symbols})
+
+
+@app.route('/api/roc/<symbol>', methods=['GET'])
+def get_roc(symbol):
+    """Get ROC data for a specific symbol"""
+    symbol = symbol.upper()
+    data = app_state.get_symbol_roc_data(symbol)
+    if data is None:
+        return jsonify([])
+    return jsonify(data)
+
+
+@app.route('/api/reference/<symbol>', methods=['GET'])
+def get_reference(symbol):
+    """Get reference data for a specific symbol"""
+    symbol = symbol.upper()
+    data = app_state.get_symbol_reference_data(symbol)
+    if data is None:
+        return jsonify([])
+    return jsonify(data)
+
+
+# Legacy endpoints for backward compatibility (default to NIFTY)
 @app.route('/api/roc', methods=['GET'])
-def get_roc():
-    data = app_state.get_roc_data()
+def get_roc_legacy():
+    data = app_state.get_symbol_roc_data('NIFTY') if 'NIFTY' in app_state.active_symbols else app_state.get_roc_data()
     if data is None:
         return jsonify([])
     return jsonify(data)
 
 
 @app.route('/api/reference', methods=['GET'])
-def get_reference():
-    data = app_state.get_reference_data()
+def get_reference_legacy():
+    data = app_state.get_symbol_reference_data('NIFTY') if 'NIFTY' in app_state.active_symbols else app_state.get_reference_data()
     if data is None:
         return jsonify([])
     return jsonify(data)

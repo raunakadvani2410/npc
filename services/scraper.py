@@ -110,45 +110,21 @@ def submit_otp(driver, otp):
     return driver  
 
 
-def find_and_return_table(driver):
-    try:    
-        print("Looking for 'All Column View' button")
-        wait = WebDriverWait(driver, 10)
-        l = wait.until(EC.element_to_be_clickable((By.XPATH, "//p[text()='All Column View']/parent::button")))
-        driver.execute_script("arguments[0].click();", l)
-        print("'All Column View' button found and clicked")
-        
-        print("Waiting for table to expand...")
-        wait.until(EC.presence_of_element_located((By.XPATH, "//tbody//td[contains(@class, 'col-ce')]")))
-    
-    except (NoSuchElementException, TimeoutException) as e:
-        print(f"'All Column View' button not found or not clickable: {e}. Moving on.")
+def navigate_to_symbol(driver, url):
+    """Navigate to a specific symbol's option chain page"""
+    driver.get(url)
+    print(f"Navigating to: {url}")
+    tm.sleep(3)  # Wait for page load
+    return driver
 
-    print("Looking for options table")
+
+def find_and_return_table(driver):
     try:
         table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
     except Exception as e:
         print(f"Error finding table: {e}")
         table_data = []
-        
-    print(f"Length of table data: {len(table_data)}")
-    print(f"Type of table data: {type(table_data)}")
    
     data_list = [data.text.split() for data in table_data]
     
-    return driver, data_list[0]
-
-
-def find_and_return_table_no_button(driver):
-    tm.sleep(3)
-
-    print("Looking for options table (no button)")
-    try:
-        table_data = driver.find_elements(By.XPATH, "//tbody[.//tr[contains(@id, '2')]]")
-    except Exception as e:
-        print(f"Error finding table: {e}")
-        table_data = []
-
-    data_list = [data.text.split() for data in table_data]
     return driver, data_list[0] if data_list else []
-
