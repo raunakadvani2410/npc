@@ -74,18 +74,79 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     }
 }
 
+// Helper function to convert dd/mm/yyyy to YYYY-MM-DD
+function convertDateFormat(dateStr) {
+    if (!dateStr) return null;
+    
+    // Check if already in YYYY-MM-DD format (from date input)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+    }
+    
+    // Parse dd/mm/yyyy format
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) {
+        throw new Error('Invalid date format. Please use dd/mm/yyyy');
+    }
+    
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    
+    // Validate date
+    const date = new Date(`${year}-${month}-${day}`);
+    if (isNaN(date.getTime())) {
+        throw new Error('Invalid date. Please check the date values.');
+    }
+    
+    // Validate that the parsed date matches input (to catch invalid dates like 32/13/2025)
+    const parsedDay = date.getDate().toString().padStart(2, '0');
+    const parsedMonth = (date.getMonth() + 1).toString().padStart(2, '0');
+    const parsedYear = date.getFullYear().toString();
+    
+    if (parsedDay !== day || parsedMonth !== month || parsedYear !== year) {
+        throw new Error('Invalid date. Please check the date values.');
+    }
+    
+    return `${year}-${month}-${day}`;
+}
+
 // Event Handlers
 async function handleStart() {
     try {
         // Get symbol configuration
-        const niftyExpiry = niftyExpiryInput.value;
+        const niftyExpiryRaw = niftyExpiryInput.value.trim();
         const equitySymbol = equitySymbolInput.value.trim().toUpperCase();
-        const equityExpiry = equityExpiryInput.value;
+        const equityExpiryRaw = equityExpiryInput.value.trim();
+        
+        // Validate and convert dates
+        if (!niftyExpiryRaw) {
+            alert('Please enter NIFTY expiry date');
+            return;
+        }
+        
+        let niftyExpiry, equityExpiry;
+        
+        try {
+            niftyExpiry = convertDateFormat(niftyExpiryRaw);
+        } catch (error) {
+            alert(`Invalid NIFTY expiry date: ${error.message}`);
+            return;
+        }
         
         // Validate equity inputs
-        if (equitySymbol && !equityExpiry) {
+        if (equitySymbol && !equityExpiryRaw) {
             alert('Please enter expiry date for equity symbol');
             return;
+        }
+        
+        if (equitySymbol && equityExpiryRaw) {
+            try {
+                equityExpiry = convertDateFormat(equityExpiryRaw);
+            } catch (error) {
+                alert(`Invalid equity expiry date: ${error.message}`);
+                return;
+            }
         }
         
         // Build payload
