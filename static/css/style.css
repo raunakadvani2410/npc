@@ -95,13 +95,6 @@ body {
     font-size: 1.2rem;
 }
 
-.date-format-hint {
-    margin-bottom: 1rem;
-    color: #a3a8b8;
-    font-size: 0.85rem;
-    font-style: italic;
-}
-
 .input-row {
     display: flex;
     align-items: center;
