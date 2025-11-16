@@ -90,7 +90,8 @@ class AppState:
         """Initialize data structure for a symbol"""
         with self.lock:
             self.symbols[symbol] = {
-                'df': None,
+                'df': None,  # Working dataframe (gets updated for ROC calculations)
+                'df_reference': None,  # Static reference data from t0 (never changes)
                 'df_roc': pd.DataFrame(),
                 'underlying_price': None,
                 'url': url,
@@ -133,11 +134,8 @@ class AppState:
                     if pd.isna(value) or value == float('inf') or value == float('-inf'):
                         cleaned[key] = None
                     elif key == 'Time (ROC)' and pd.notna(value):
-                        # Format time consistently as DD/MM/YYYY HH:MM:SS
-                        cleaned[key] = pd.to_datetime(value).strftime("%d/%m/%Y %H:%M:%S")
-                    elif key == 'Strike Price' and pd.notna(value):
-                        # Remove decimal places from strike price
-                        cleaned[key] = int(value)
+                        # Format time as HH:MM:SS only
+                        cleaned[key] = pd.to_datetime(value).strftime("%H:%M:%S")
                     else:
                         cleaned[key] = value
                 cleaned_records.append(cleaned)
@@ -182,11 +180,8 @@ class AppState:
                     if pd.isna(value) or value == float('inf') or value == float('-inf'):
                         cleaned[key] = None
                     elif key == 'Time (t0)' and pd.notna(value):
-                        # Format time consistently as DD/MM/YYYY HH:MM:SS
-                        cleaned[key] = pd.to_datetime(value).strftime("%d/%m/%Y %H:%M:%S")
-                    elif key == 'Strike Price' and pd.notna(value):
-                        # Remove decimal places from strike price
-                        cleaned[key] = int(value)
+                        # Format time as HH:MM:SS only
+                        cleaned[key] = pd.to_datetime(value).strftime("%H:%M:%S")
                     else:
                         cleaned[key] = value
                 cleaned_records.append(cleaned)
@@ -210,10 +205,8 @@ class AppState:
                     if pd.isna(value) or value == float('inf') or value == float('-inf'):
                         cleaned[key] = None
                     elif key == 'Time (ROC)' and pd.notna(value):
-                        cleaned[key] = pd.to_datetime(value).strftime("%d/%m/%Y %H:%M:%S")
-                    elif key == 'Strike Price' and pd.notna(value):
-                        # Remove decimal places from strike price
-                        cleaned[key] = int(value)
+                        # Format time as HH:MM:SS only
+                        cleaned[key] = pd.to_datetime(value).strftime("%H:%M:%S")
                     else:
                         cleaned[key] = value
                 cleaned_records.append(cleaned)
@@ -222,10 +215,10 @@ class AppState:
     def get_symbol_reference_data(self, symbol):
         """Get reference data for a specific symbol"""
         with self.lock:
-            if symbol not in self.symbols or self.symbols[symbol]['df'] is None:
+            if symbol not in self.symbols or self.symbols[symbol]['df_reference'] is None:
                 return None
             
-            reference_data = self.symbols[symbol]['df'].copy()
+            reference_data = self.symbols[symbol]['df_reference'].copy()
             reference_data = reference_data.rename(columns={
                 "volume_calls": "Volume (Calls)",
                 "oi_lakhs_calls": "OI Lakhs (Calls)",
@@ -256,11 +249,8 @@ class AppState:
                     if pd.isna(value) or value == float('inf') or value == float('-inf'):
                         cleaned[key] = None
                     elif key == 'Time (t0)' and pd.notna(value):
-                        # Format time consistently as DD/MM/YYYY HH:MM:SS
-                        cleaned[key] = pd.to_datetime(value).strftime("%d/%m/%Y %H:%M:%S")
-                    elif key == 'Strike Price' and pd.notna(value):
-                        # Remove decimal places from strike price
-                        cleaned[key] = int(value)
+                        # Format time as HH:MM:SS only
+                        cleaned[key] = pd.to_datetime(value).strftime("%H:%M:%S")
                     else:
                         cleaned[key] = value
                 cleaned_records.append(cleaned)

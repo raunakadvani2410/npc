@@ -114,7 +114,9 @@ def scraping_loop():
                 df = build_dataframe(data_list)
                 df = slice_df(df, underlying_price)
                 
-                app_state.symbols[symbol]['df'] = df
+                # Store as both reference (static) and working data
+                app_state.symbols[symbol]['df_reference'] = df.copy()  # Static reference, never changes
+                app_state.symbols[symbol]['df'] = df  # Working data for ROC calculations
                 app_state.add_log(f"Initial data for {symbol} fetched successfully")
                 
             except Exception as e:
