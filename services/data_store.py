@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import threading
+import pytz
 
 
 class AppState:
@@ -38,7 +39,8 @@ class AppState:
     
     def add_log(self, message):
         with self.lock:
-            timestamp = datetime.now().strftime("%H:%M:%S")
+            IST = pytz.timezone('Asia/Kolkata')
+            timestamp = datetime.now(IST).strftime("%H:%M:%S")
             log_entry = f"[{timestamp}] {message}"
             self.logs.append(log_entry)
             print(log_entry)
