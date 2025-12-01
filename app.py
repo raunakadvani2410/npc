@@ -72,8 +72,21 @@ def scraping_loop():
         app_state.add_log("OTP submitted, waiting for login to complete")
         time.sleep(15)
         
+        # Wait until trading hours if before market open
+        from config import TRADING_START_HOUR, TRADING_START_MINUTE
+        while not app_state.should_stop:
+            if is_time_between(dt_time(TRADING_START_HOUR, TRADING_START_MINUTE), dt_time(15, 30)):
+                break
+            app_state.add_log("Market not open yet, waiting for 9:15 AM IST...")
+            time.sleep(10)  # Check every 10 seconds
+        
+        if app_state.should_stop:
+            app_state.add_log("Scraping stopped by user while waiting for market open")
+            cleanup()
+            return
+        
         # Get initial data
-        app_state.add_log("Fetching initial data")
+        app_state.add_log("Market is open, fetching initial data")
         
         # Get Nifty futures value
         nifty = yf.Ticker(NIFTY_TICKER)
@@ -92,7 +105,7 @@ def scraping_loop():
         app_state.set_state('SCRAPING')
         
         # Main scraping loop
-        while not app_state.should_stop and is_time_between(dt_time(2, 50), dt_time(15, 30)):
+        while not app_state.should_stop and is_time_between(dt_time(TRADING_START_HOUR, TRADING_START_MINUTE), dt_time(15, 30)):
             try:
                 app_state.add_log(f"Fetching update #{app_state.counter + 1}")
                 

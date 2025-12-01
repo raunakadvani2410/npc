@@ -318,14 +318,14 @@ function updateTabContent(strike) {
     if (rocForStrike.length > 0) {
         html += '<div class="table-section">';
         html += '<h4>Rate of Change Data</h4>';
-        html += buildTable(rocForStrike, true);
+        html += buildTable(rocForStrike, true, true);  // Apply color coding and freeze first 2 rows
         html += '</div>';
     }
     
     tabContentDiv.innerHTML = html;
 }
 
-function buildTable(data, applyColorCoding) {
+function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
     if (data.length === 0) return '';
     
     // Define column order explicitly (not alphabetical)
@@ -344,7 +344,7 @@ function buildTable(data, applyColorCoding) {
         'LTP (Puts)'
     ];
     
-    let html = '<table class="data-table"><thead><tr>';
+    let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
     
     // Header
     columns.forEach(col => {
@@ -353,8 +353,16 @@ function buildTable(data, applyColorCoding) {
     html += '</tr></thead><tbody>';
     
     // Rows
-    data.forEach(row => {
-        html += '<tr>';
+    data.forEach((row, index) => {
+        // Add frozen row class for first 2 rows of ROC table
+        let rowClass = '';
+        if (freezeFirstTwoRows && index === 0) {
+            rowClass = ' class="frozen-row-1"';
+        } else if (freezeFirstTwoRows && index === 1) {
+            rowClass = ' class="frozen-row-2"';
+        }
+        
+        html += `<tr${rowClass}>`;
         columns.forEach(col => {
             const value = row[col];
             let cellClass = '';
@@ -374,7 +382,7 @@ function buildTable(data, applyColorCoding) {
         html += '</tr>';
     });
     
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     return html;
 }
 
