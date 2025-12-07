@@ -245,12 +245,18 @@ body {
     overflow-x: auto;
     border-radius: 0.5rem;
     background-color: #262730;
+    position: relative;
+    display: block;
+    /* Prevent scroll jumping */
+    overflow-anchor: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
     background-color: #262730;
+    position: relative;
 }
 
 .data-table thead {
@@ -258,6 +264,10 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+.data-table thead tr {
+    display: table-row;
 }
 
 .data-table th {
@@ -268,6 +278,8 @@ body {
     border-bottom: 1px solid #0e1117;
     font-size: 0.85rem;
     background-color: #1e2129;
+    position: sticky;
+    top: 0;
 }
 
 /* Frozen rows (first 2 rows of ROC table) */
@@ -278,10 +290,20 @@ body {
     background-color: #2d3748;
 }
 
+.data-table tbody tr.frozen-row-1 td {
+    position: relative;
+    background-color: #2d3748;
+}
+
 .data-table tbody tr.frozen-row-2 {
     position: sticky;
     top: 82px; /* Height of thead + first row */
     z-index: 8;
+    background-color: #2d3748;
+}
+
+.data-table tbody tr.frozen-row-2 td {
+    position: relative;
     background-color: #2d3748;
 }
 

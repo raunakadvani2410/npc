@@ -298,6 +298,10 @@ function updateTabContent(strike) {
     const tabContentDiv = document.querySelector(`.tab-content[data-strike="${strike}"]`);
     if (!tabContentDiv) return;
     
+    // Save scroll position of ROC table wrapper before update
+    const rocTableWrapper = tabContentDiv.querySelector('.table-section:last-child .table-wrapper');
+    const scrollTop = rocTableWrapper ? rocTableWrapper.scrollTop : 0;
+    
     // Filter data for this strike
     const referenceForStrike = referenceData.filter(row => row['Strike Price'] === strike);
     const rocForStrike = rocData.filter(row => row['Strike Price'] === strike)
@@ -323,6 +327,12 @@ function updateTabContent(strike) {
     }
     
     tabContentDiv.innerHTML = html;
+    
+    // Restore scroll position after update
+    const newRocTableWrapper = tabContentDiv.querySelector('.table-section:last-child .table-wrapper');
+    if (newRocTableWrapper && scrollTop > 0) {
+        newRocTableWrapper.scrollTop = scrollTop;
+    }
 }
 
 function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
