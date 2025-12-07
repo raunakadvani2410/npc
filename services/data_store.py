@@ -13,6 +13,9 @@ class AppState:
         self.df_roc = pd.DataFrame()
         self.nifty_futures = None
         
+        # Configuration
+        self.sensibull_url = None
+        
         # Metadata
         self.counter = 0
         self.last_update = None

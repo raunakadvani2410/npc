@@ -88,11 +88,14 @@ def get_remarks_puts(row):
         return "NA"
 
 
-def calculate_roc(df):
+def calculate_roc(df, reference_df=None):
     df['time'] = pd.to_datetime(df['time'], format="%d/%m/%Y %H:%M:%S")
     df.drop(["oi_change_calls", "oi_change_pct_calls", "oi_change_pct_puts", "oi_change_puts"], axis=1, inplace=True)
 
     grouped = df.groupby('strike_price')
+    
+    # Columns to track percentage changes
+    pct_change_columns = ['volume_calls', 'oi_lakhs_calls', 'ltp_calls', 'iv', 'ltp_puts', 'oi_lakh_puts', 'volume_puts']
     
     df_roc_list = []
     for strike_price, group in grouped:
@@ -119,6 +122,28 @@ def calculate_roc(df):
 
     df_roc['strike_price'] = df_roc['strike_price'].astype(int)
     
+    # Calculate percentage changes if reference data is provided
+    if reference_df is not None:
+        # Merge with reference data on strike_price
+        reference_df = reference_df.copy()
+        reference_df['strike_price'] = reference_df['strike_price'].astype(int)
+        
+        for col in pct_change_columns:
+            # Calculate percentage change relative to reference
+            merged = df_roc.merge(reference_df[['strike_price', col]], 
+                                 on='strike_price', 
+                                 how='left', 
+                                 suffixes=('', '_ref'))
+            
+            ref_col = f"{col}_ref"
+            pct_col = f"{col}_pct"
+            
+            # Avoid division by zero - if reference is 0, percentage change is 0
+            df_roc[pct_col] = merged.apply(
+                lambda row: 0 if row[ref_col] == 0 else round((row[col] / row[ref_col]) * 100, 2),
+                axis=1
+            )
+    
     df_roc.rename(columns={
         "volume_calls": "Volume (Calls)",
         "oi_lakhs_calls": "OI Lakhs (Calls)",
@@ -130,16 +155,46 @@ def calculate_roc(df):
         "volume_puts": "Volume (Puts)",
         "time": "Time (ROC)"
     }, inplace=True)
+    
+    # Rename percentage change columns
+    if reference_df is not None:
+        df_roc.rename(columns={
+            "volume_calls_pct": "Volume (Calls) %",
+            "oi_lakhs_calls_pct": "OI Lakhs (Calls) %",
+            "ltp_calls_pct": "LTP (Calls) %",
+            "iv_pct": "IV %",
+            "ltp_puts_pct": "LTP (Puts) %",
+            "oi_lakh_puts_pct": "OI Lakhs (Puts) %",
+            "volume_puts_pct": "Volume (Puts) %"
+        }, inplace=True)
 
     df_roc['Remarks (Calls)'] = df_roc.apply(get_remarks_calls, axis=1)
     df_roc['Remarks (Puts)'] = df_roc.apply(get_remarks_puts, axis=1)
     df_roc['COI/VOL (Calls)'] = df_roc['OI Lakhs (Calls)'] / df_roc['Volume (Calls)']
     df_roc['COI/VOL (Puts)'] = df_roc['OI Lakhs (Puts)'] / df_roc['Volume (Puts)']
 
-    df_roc = df_roc.reindex(columns=[
-        'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
-        'Strike Price', 'COI/VOL (Puts)', 'Volume (Puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)', 'Time (ROC)'
-    ])
+    # Reorder columns to place percentage changes next to their values
+    if reference_df is not None:
+        df_roc = df_roc.reindex(columns=[
+            'Remarks (Calls)', 
+            'Volume (Calls)', 'Volume (Calls) %',
+            'OI Lakhs (Calls)', 'OI Lakhs (Calls) %',
+            'LTP (Calls)', 'LTP (Calls) %',
+            'IV', 'IV %',
+            'COI/VOL (Calls)',
+            'Strike Price', 
+            'COI/VOL (Puts)', 
+            'LTP (Puts)', 'LTP (Puts) %',
+            'OI Lakhs (Puts)', 'OI Lakhs (Puts) %',
+            'Volume (Puts)', 'Volume (Puts) %',
+            'Remarks (Puts)', 
+            'Time (ROC)'
+        ])
+    else:
+        df_roc = df_roc.reindex(columns=[
+            'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
+            'Strike Price', 'COI/VOL (Puts)', 'Volume (Puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)', 'Time (ROC)'
+        ])
 
     return df_roc
 

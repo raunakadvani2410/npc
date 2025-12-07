@@ -19,6 +19,9 @@ const errorMessage = document.getElementById('error-message');
 const tabsContainer = document.getElementById('tabs-container');
 const tabsHeader = document.getElementById('tabs-header');
 const tabsContent = document.getElementById('tabs-content');
+const configContainer = document.getElementById('config-container');
+const tickerInput = document.getElementById('ticker-input');
+const expiryInput = document.getElementById('expiry-input');
 
 // Event Listeners
 startBtn.addEventListener('click', handleStart);
@@ -63,8 +66,21 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 
 // Event Handlers
 async function handleStart() {
+    const ticker = tickerInput.value.trim();
+    const expiryDate = expiryInput.value.trim();
+    
+    if (!ticker) {
+        alert('Please enter a ticker symbol');
+        return;
+    }
+    
+    if (!expiryDate) {
+        alert('Please select an expiry date');
+        return;
+    }
+    
     try {
-        await apiCall('start', 'POST');
+        await apiCall('start', 'POST', { ticker, expiry_date: expiryDate });
         console.log('Scraping started');
     } catch (error) {
         alert(`Failed to start: ${error.message}`);
@@ -138,6 +154,13 @@ function updateUIState(status) {
     // Update button states
     startBtn.disabled = !['IDLE', 'ERROR', 'STOPPED'].includes(status.state);
     stopBtn.disabled = !['LOGGING_IN', 'WAITING_FOR_OTP', 'OTP_SUBMITTED', 'SCRAPING'].includes(status.state);
+    
+    // Show/hide config container
+    if (['IDLE', 'ERROR', 'STOPPED'].includes(status.state)) {
+        configContainer.style.display = 'block';
+    } else {
+        configContainer.style.display = 'none';
+    }
     
     // Show/hide OTP input (only show when waiting for OTP)
     if (status.state === 'WAITING_FOR_OTP') {
@@ -340,8 +363,18 @@ function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
     
     // Define column order explicitly (not alphabetical)
     const columns = [
-        'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
-        'Strike Price', 'COI/VOL (Puts)', 'Volume (Puts)', 'OI Lakhs (Puts)', 'LTP (Puts)', 'Remarks (Puts)',
+        'Remarks (Calls)', 
+        'Volume (Calls)', 'Volume (Calls) %',
+        'OI Lakhs (Calls)', 'OI Lakhs (Calls) %',
+        'LTP (Calls)', 'LTP (Calls) %',
+        'IV', 'IV %',
+        'COI/VOL (Calls)',
+        'Strike Price', 
+        'COI/VOL (Puts)', 
+        'LTP (Puts)', 'LTP (Puts) %',
+        'OI Lakhs (Puts)', 'OI Lakhs (Puts) %',
+        'Volume (Puts)', 'Volume (Puts) %',
+        'Remarks (Puts)',
         'Time (ROC)', 'Time (t0)'
     ].filter(col => col in data[0]); // Only include columns that exist in the data
     
@@ -354,10 +387,35 @@ function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
         'LTP (Puts)'
     ];
     
+    // Columns that should be hidden (we merge them with their base column)
+    const percentageColumns = [
+        'Volume (Calls) %',
+        'OI Lakhs (Calls) %',
+        'LTP (Calls) %',
+        'IV %',
+        'LTP (Puts) %',
+        'OI Lakhs (Puts) %',
+        'Volume (Puts) %'
+    ];
+    
+    // Map each percentage column to its base column
+    const baseColumnMap = {
+        'Volume (Calls) %': 'Volume (Calls)',
+        'OI Lakhs (Calls) %': 'OI Lakhs (Calls)',
+        'LTP (Calls) %': 'LTP (Calls)',
+        'IV %': 'IV',
+        'LTP (Puts) %': 'LTP (Puts)',
+        'OI Lakhs (Puts) %': 'OI Lakhs (Puts)',
+        'Volume (Puts) %': 'Volume (Puts)'
+    };
+    
+    // Filter out percentage columns from header
+    const displayColumns = columns.filter(col => !percentageColumns.includes(col));
+    
     let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
     
     // Header
-    columns.forEach(col => {
+    displayColumns.forEach(col => {
         html += `<th>${escapeHtml(col)}</th>`;
     });
     html += '</tr></thead><tbody>';
@@ -373,7 +431,7 @@ function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
         }
         
         html += `<tr${rowClass}>`;
-        columns.forEach(col => {
+        displayColumns.forEach(col => {
             const value = row[col];
             let cellClass = '';
             
@@ -386,7 +444,16 @@ function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
                 }
             }
             
-            const displayValue = formatCellValue(value);
+            // Check if this column has a corresponding percentage column
+            const pctCol = `${col} %`;
+            let displayValue = formatCellValue(value);
+            
+            if (row.hasOwnProperty(pctCol) && row[pctCol] !== null && row[pctCol] !== undefined) {
+                const pctValue = row[pctCol];
+                const pctSign = pctValue > 0 ? '+' : '';
+                displayValue = `${displayValue} <span class="percentage">(${pctSign}${pctValue.toFixed(2)}%)</span>`;
+            }
+            
             html += `<td class="${cellClass}">${displayValue}</td>`;
         });
         html += '</tr>';

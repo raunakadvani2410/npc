@@ -49,7 +49,7 @@ def scraping_loop():
         # State: LOGGING_IN
         app_state.set_state('LOGGING_IN')
         app_state.add_log("Entering Sensibull webpage")
-        app_state.driver = enter_webpage(SENSIBULL_URL)
+        app_state.driver = enter_webpage(app_state.sensibull_url)
         
         app_state.add_log("Entering login credentials")
         app_state.driver = login(app_state.driver)
@@ -116,7 +116,7 @@ def scraping_loop():
                 
                 # Calculate ROC
                 all_data = pd.concat([app_state.df, df_1], ignore_index=True)
-                changes = calculate_roc(all_data)
+                changes = calculate_roc(all_data, reference_df=app_state.df)
                 
                 # Update df_roc (prepend new data so most recent is at top)
                 with app_state.lock:
@@ -199,11 +199,25 @@ def start_scraping():
     if app_state.state not in ['IDLE', 'ERROR', 'STOPPED']:
         return jsonify({'error': f'Cannot start: current state is {app_state.state}'}), 400
     
+    data = request.get_json()
+    ticker = data.get('ticker', 'NIFTY')
+    expiry_date = data.get('expiry_date')
+    
+    if not expiry_date:
+        return jsonify({'error': 'Expiry date is required (format: YYYY-MM-DD)'}), 400
+    
+    # Build the URL with user parameters
+    sensibull_url = f'https://web.sensibull.com/option-chain?tradingsymbol={ticker}&view=all&expiry={expiry_date}'
+    
     # Reset state if coming from ERROR or STOPPED
     if app_state.state in ['ERROR', 'STOPPED']:
         app_state.reset()
     
-    app_state.add_log("Start button clicked")
+    app_state.add_log(f"Start button clicked - Ticker: {ticker}, Expiry: {expiry_date}")
+    app_state.add_log(f"URL: {sensibull_url}")
+    
+    # Store the URL in app_state for use in scraping_loop
+    app_state.sensibull_url = sensibull_url
     
     # Start scraping in background thread
     app_state.scraping_thread = threading.Thread(target=scraping_loop, daemon=True)

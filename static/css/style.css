@@ -157,6 +157,50 @@ body {
     color: #ff4b4b;
 }
 
+/* Config Container */
+.config-container {
+    margin-bottom: 1.5rem;
+}
+
+.config-box {
+    background-color: #262730;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.config-box h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #fafafa;
+}
+
+.config-field {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config-field label {
+    font-weight: 600;
+    color: #a3a8b8;
+}
+
+.config-field input {
+    padding: 0.5rem;
+    border: 1px solid #4b4b59;
+    border-radius: 0.25rem;
+    background-color: #0e1117;
+    color: #fafafa;
+    font-size: 1rem;
+    max-width: 300px;
+}
+
+.config-field input:focus {
+    outline: none;
+    border-color: #ff4b4b;
+}
+
 /* Logs Section */
 .logs-section {
     margin-bottom: 2rem;
@@ -331,6 +375,13 @@ body {
 
 .neutral {
     color: #a3a8b8;
+}
+
+/* Percentage text styling */
+.percentage {
+    font-size: 0.75rem;
+    color: #a3a8b8;
+    font-weight: normal;
 }
 
 /* Scrollbar styling */
