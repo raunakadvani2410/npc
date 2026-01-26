@@ -90,8 +90,7 @@ def scraping_loop():
         
         # Get Nifty futures value
         nifty = yf.Ticker(NIFTY_TICKER)
-        app_state.nifty_futures =  25048
-        # nifty.history(period="1d")['Close'].iloc[-1]
+        app_state.nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
         app_state.add_log(f"Nifty futures: {app_state.nifty_futures}")
         
         app_state.driver, data_list = find_and_return_table(app_state.driver)
