@@ -313,6 +313,15 @@ def get_reference():
     return jsonify(data)
 
 
+@app.route('/api/highest_oi', methods=['GET'])
+def get_highest_oi():
+    """Returns the strike price with highest OI and whether it's a call or put"""
+    result = app_state.get_highest_oi_strike()
+    if result is None:
+        return jsonify({})
+    return jsonify(result)
+
+
 if __name__ == '__main__':
     try:
         print("Flask app starting...", flush=True)

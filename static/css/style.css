@@ -263,6 +263,14 @@ body {
     border-bottom-color: #ff4b4b;
 }
 
+.tab-button.highest-oi-call {
+    background-color: rgba(255, 75, 75, 0.2);
+}
+
+.tab-button.highest-oi-put {
+    background-color: rgba(76, 175, 80, 0.2);
+}
+
 .tab-content {
     display: none;
 }

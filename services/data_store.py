@@ -147,6 +147,30 @@ class AppState:
                 cleaned_records.append(cleaned)
             
             return cleaned_records
+    
+    def get_highest_oi_strike(self):
+        """Find strike price with highest OI and whether it's call or put"""
+        with self.lock:
+            if self.df is None:
+                return None
+            
+            max_oi = -1
+            result = {'strike': None, 'type': None}
+            
+            for _, row in self.df.iterrows():
+                strike = row['strike_price']
+                call_oi = row['oi_lakhs_calls']
+                put_oi = row['oi_lakh_puts']
+                
+                if call_oi > max_oi:
+                    max_oi = call_oi
+                    result = {'strike': int(strike), 'type': 'call'}
+                
+                if put_oi > max_oi:
+                    max_oi = put_oi
+                    result = {'strike': int(strike), 'type': 'put'}
+            
+            return result if result['strike'] is not None else None
 
 
 # Global app state instance
