@@ -10,6 +10,7 @@ class AppState:
         
         # Data
         self.df = None
+        self.df_latest = None
         self.df_roc = pd.DataFrame()
         self.nifty_futures = None
         
@@ -58,6 +59,7 @@ class AppState:
         with self.lock:
             self.state = 'IDLE'
             self.df = None
+            self.df_latest = None
             self.df_roc = pd.DataFrame()
             self.nifty_futures = None
             self.counter = 0
@@ -149,26 +151,27 @@ class AppState:
             return cleaned_records
     
     def get_highest_oi_strike(self):
-        """Find strike price with highest OI and whether it's call or put"""
+        """Find strike price with highest OI and whether it's call or put, using latest scraped data"""
         with self.lock:
-            if self.df is None:
+            source_df = self.df_latest if self.df_latest is not None else self.df
+            if source_df is None:
                 return None
             
             max_oi = -1
-            result = {'strike': None, 'type': None}
+            result = {'strike': None, 'type': None, 'oi_value': None}
             
-            for _, row in self.df.iterrows():
+            for _, row in source_df.iterrows():
                 strike = row['strike_price']
                 call_oi = row['oi_lakhs_calls']
                 put_oi = row['oi_lakh_puts']
                 
                 if call_oi > max_oi:
                     max_oi = call_oi
-                    result = {'strike': int(strike), 'type': 'call'}
+                    result = {'strike': int(strike), 'type': 'call', 'oi_value': float(call_oi)}
                 
                 if put_oi > max_oi:
                     max_oi = put_oi
-                    result = {'strike': int(strike), 'type': 'put'}
+                    result = {'strike': int(strike), 'type': 'put', 'oi_value': float(put_oi)}
             
             return result if result['strike'] is not None else None
 

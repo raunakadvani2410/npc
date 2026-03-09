@@ -114,6 +114,9 @@ def scraping_loop():
                 df_1 = build_dataframe(data_list)
                 df_1 = slice_df(df_1, app_state.nifty_futures)
                 
+                with app_state.lock:
+                    app_state.df_latest = df_1
+                
                 # Calculate ROC
                 all_data = pd.concat([app_state.df, df_1], ignore_index=True)
                 changes = calculate_roc(all_data, reference_df=app_state.df)
