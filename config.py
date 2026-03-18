@@ -11,8 +11,8 @@ TRADING_END_HOUR = 15
 TRADING_END_MINUTE = 30
 
 # Scraping intervals
-INITIAL_WAIT_SECONDS = 10
-SCRAPING_INTERVAL_SECONDS = 10
+INITIAL_WAIT_SECONDS = 23
+SCRAPING_INTERVAL_SECONDS = 23
 
 # Nifty options
 SENSIBULL_URL = 'https://web.sensibull.com/option-chain?tradingsymbol=NIFTY'
