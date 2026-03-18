@@ -270,18 +270,14 @@ function renderTables() {
 }
 
 function updateTabHighlights() {
-    // Remove all OI classes first
     document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('highest-oi-call', 'highest-oi-put');
+        btn.classList.remove('highest-oi-call', 'highest-oi-put', 'second-oi-call', 'second-oi-put');
         
-        // Apply new highest OI styling
         const strike = parseInt(btn.dataset.strike);
         if (highestOiData.strike === strike) {
-            if (highestOiData.type === 'call') {
-                btn.classList.add('highest-oi-call');
-            } else if (highestOiData.type === 'put') {
-                btn.classList.add('highest-oi-put');
-            }
+            btn.classList.add(highestOiData.type === 'call' ? 'highest-oi-call' : 'highest-oi-put');
+        } else if (highestOiData.second_strike === strike) {
+            btn.classList.add(highestOiData.second_type === 'call' ? 'second-oi-call' : 'second-oi-put');
         }
     });
 }
@@ -298,13 +294,11 @@ function renderTabs(strikes) {
         tabBtn.textContent = strike;
         tabBtn.dataset.strike = strike;
         
-        // Apply highest OI styling
+        // Apply OI highlighting
         if (highestOiData.strike === strike) {
-            if (highestOiData.type === 'call') {
-                tabBtn.classList.add('highest-oi-call');
-            } else if (highestOiData.type === 'put') {
-                tabBtn.classList.add('highest-oi-put');
-            }
+            tabBtn.classList.add(highestOiData.type === 'call' ? 'highest-oi-call' : 'highest-oi-put');
+        } else if (highestOiData.second_strike === strike) {
+            tabBtn.classList.add(highestOiData.second_type === 'call' ? 'second-oi-call' : 'second-oi-put');
         }
         
         if (index === 0) {

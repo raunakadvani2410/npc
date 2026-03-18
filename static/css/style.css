@@ -271,6 +271,16 @@ body {
     background-color: rgba(76, 175, 80, 0.2);
 }
 
+.tab-button.second-oi-call {
+    border: 2px solid rgba(255, 75, 75, 0.6);
+    border-bottom-width: 2px;
+}
+
+.tab-button.second-oi-put {
+    border: 2px solid rgba(76, 175, 80, 0.6);
+    border-bottom-width: 2px;
+}
+
 .tab-content {
     display: none;
 }
