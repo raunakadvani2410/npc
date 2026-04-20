@@ -6,7 +6,54 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import time as tm
+import requests
 from config import CHROMEDRIVER_PATH, ZERODHA_USER_ID, ZERODHA_PASSWORD
+
+_NSE_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Referer': 'https://www.nseindia.com/option-chain',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Connection': 'keep-alive',
+}
+
+
+def get_nifty_spot_price():
+    """Fetch Nifty spot price from NSE API with cookie setup and fallback."""
+    session = requests.Session()
+
+    # Seed cookies via homepage before hitting the API
+    session.get('https://www.nseindia.com', headers=_NSE_HEADERS, timeout=15)
+    tm.sleep(1)
+
+    # Primary: option chain endpoint (has underlyingValue)
+    try:
+        resp = session.get(
+            'https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY',
+            headers=_NSE_HEADERS,
+            timeout=15
+        )
+        data = resp.json()
+        print(f"NSE option-chain status={resp.status_code} keys={list(data.keys())[:5]}")
+        return float(data['records']['underlyingValue'])
+    except Exception as e:
+        print(f"Primary NSE endpoint failed: {e}. Trying fallback.")
+
+    # Fallback: allIndices endpoint
+    resp = session.get(
+        'https://www.nseindia.com/api/allIndices',
+        headers=_NSE_HEADERS,
+        timeout=15
+    )
+    data = resp.json()
+    print(f"NSE allIndices status={resp.status_code}")
+    for entry in data.get('data', []):
+        if entry.get('index') == 'NIFTY 50':
+            return float(entry['last'])
+
+    raise RuntimeError(f"Could not fetch Nifty spot price. Last response keys: {list(data.keys())}")
 
 
 def enter_webpage(link):

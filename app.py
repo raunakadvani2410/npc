@@ -12,8 +12,7 @@ import pytz
 from pyvirtualdisplay import Display
 
 from services.data_store import app_state
-import requests as http_requests
-from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
+from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button, get_nifty_spot_price
 from services.data_processor import build_dataframe, slice_df, calculate_roc
 from config import SENSIBULL_URL, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
 
@@ -88,21 +87,7 @@ def scraping_loop():
         app_state.add_log("Market is open, fetching initial data")
         
         # Get Nifty spot price from NSE API
-        # NSE requires a homepage visit first to set cookies before the API call succeeds
-        _nse_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': '*/*',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://www.nseindia.com',
-        }
-        _nse_session = http_requests.Session()
-        _nse_session.get('https://www.nseindia.com', headers=_nse_headers, timeout=10)
-        _nse_resp = _nse_session.get(
-            'https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY',
-            headers=_nse_headers,
-            timeout=10
-        )
-        app_state.nifty_futures = float(_nse_resp.json()['records']['underlyingValue'])
+        app_state.nifty_futures = get_nifty_spot_price()
         app_state.add_log(f"Nifty futures: {app_state.nifty_futures}")
         
         app_state.driver, data_list = find_and_return_table(app_state.driver)
