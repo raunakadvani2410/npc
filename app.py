@@ -12,7 +12,8 @@ import pytz
 from pyvirtualdisplay import Display
 
 from services.data_store import app_state
-from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button, get_nifty_futures
+from nsepython import nsefetch
+from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
 from services.data_processor import build_dataframe, slice_df, calculate_roc
 from config import SENSIBULL_URL, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
 
@@ -86,8 +87,9 @@ def scraping_loop():
         # Get initial data
         app_state.add_log("Market is open, fetching initial data")
         
-        # Get Nifty spot price from the already-loaded Sensibull page
-        app_state.driver, app_state.nifty_futures = get_nifty_futures(app_state.driver)
+        # Get Nifty spot price from NSE API
+        nse_data = nsefetch('https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY')
+        app_state.nifty_futures = float(nse_data['records']['underlyingValue'])
         app_state.add_log(f"Nifty futures: {app_state.nifty_futures}")
         
         app_state.driver, data_list = find_and_return_table(app_state.driver)
