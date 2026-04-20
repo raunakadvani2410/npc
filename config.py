@@ -16,7 +16,6 @@ SCRAPING_INTERVAL_SECONDS = 23
 
 # Nifty options
 SENSIBULL_URL = 'https://web.sensibull.com/option-chain?tradingsymbol=NIFTY'
-NIFTY_TICKER = "^NSEI"
 
 # Strike price configuration
 STRIKE_RANGE = 4  # How many strikes above and below central strike

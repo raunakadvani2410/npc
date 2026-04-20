@@ -4,8 +4,6 @@ import threading
 import time
 import os
 import sys
-import yfinance as yf
-
 # Load environment variables from .env file
 load_dotenv()
 import pandas as pd
@@ -14,9 +12,9 @@ import pytz
 from pyvirtualdisplay import Display
 
 from services.data_store import app_state
-from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
+from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button, get_nifty_futures
 from services.data_processor import build_dataframe, slice_df, calculate_roc
-from config import SENSIBULL_URL, NIFTY_TICKER, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
+from config import SENSIBULL_URL, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
 
 app = Flask(__name__)
 
@@ -88,9 +86,8 @@ def scraping_loop():
         # Get initial data
         app_state.add_log("Market is open, fetching initial data")
         
-        # Get Nifty futures value
-        nifty = yf.Ticker(NIFTY_TICKER)
-        app_state.nifty_futures = nifty.history(period="1d")['Close'].iloc[-1]
+        # Get Nifty spot price from the already-loaded Sensibull page
+        app_state.driver, app_state.nifty_futures = get_nifty_futures(app_state.driver)
         app_state.add_log(f"Nifty futures: {app_state.nifty_futures}")
         
         app_state.driver, data_list = find_and_return_table(app_state.driver)
