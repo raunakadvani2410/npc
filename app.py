@@ -7,12 +7,13 @@ import sys
 # Load environment variables from .env file
 load_dotenv()
 import pandas as pd
+from nselib import capital_market
 from datetime import datetime, time as dt_time
 import pytz
 from pyvirtualdisplay import Display
 
 from services.data_store import app_state
-from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button, get_nifty_spot_price
+from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
 from services.data_processor import build_dataframe, slice_df, calculate_roc
 from config import SENSIBULL_URL, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
 
@@ -86,8 +87,11 @@ def scraping_loop():
         # Get initial data
         app_state.add_log("Market is open, fetching initial data")
         
-        # Get Nifty spot price from NSE API
-        app_state.nifty_futures = get_nifty_spot_price()
+        # Get Nifty spot price from live NSE index snapshot
+        indices_df = capital_market.market_watch_all_indices()
+        app_state.nifty_futures = float(
+            indices_df.loc[indices_df["index"] == "NIFTY 50", "last"].iloc[0]
+        )
         app_state.add_log(f"Nifty futures: {app_state.nifty_futures}")
         
         app_state.driver, data_list = find_and_return_table(app_state.driver)

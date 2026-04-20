@@ -3,6 +3,7 @@ Flask==3.0.0
 webdriver_manager==4.0.1
 numpy
 pandas
+nselib
 pytz
 requests
 PyVirtualDisplay==3.0
