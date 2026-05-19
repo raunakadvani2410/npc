@@ -150,8 +150,51 @@ class AppState:
             
             return cleaned_records
     
+    def get_raw_data(self):
+        """Return the latest scraped data in the same format as reference data"""
+        with self.lock:
+            source_df = self.df_latest if self.df_latest is not None else self.df
+            if source_df is None:
+                return None
+            
+            raw_data = source_df.copy()
+            raw_data = raw_data.rename(columns={
+                "volume_calls": "Volume (Calls)",
+                "oi_lakhs_calls": "OI Lakhs (Calls)",
+                "ltp_calls": "LTP (Calls)",
+                "strike_price": "Strike Price",
+                "iv": "IV",
+                "ltp_puts": "LTP (Puts)",
+                "oi_lakh_puts": "OI Lakhs (Puts)",
+                "volume_puts": "Volume (Puts)",
+                "time": "Time"
+            })
+            
+            raw_data['Remarks (Calls)'] = 'NA'
+            raw_data['Remarks (Puts)'] = 'NA'
+            raw_data['COI/VOL (Calls)'] = raw_data['OI Lakhs (Calls)'] / raw_data['Volume (Calls)']
+            raw_data['COI/VOL (Puts)'] = raw_data['OI Lakhs (Puts)'] / raw_data['Volume (Puts)']
+            
+            raw_data = raw_data.reindex(columns=[
+                'Remarks (Calls)', 'Volume (Calls)', 'OI Lakhs (Calls)', 'LTP (Calls)', 'IV', 'COI/VOL (Calls)',
+                'Strike Price', 'COI/VOL (Puts)', 'LTP (Puts)', 'OI Lakhs (Puts)', 'Volume (Puts)', 'Remarks (Puts)', 'Time'
+            ])
+            
+            records = raw_data.to_dict('records')
+            cleaned_records = []
+            for record in records:
+                cleaned = {}
+                for key, value in record.items():
+                    if pd.isna(value) or value == float('inf') or value == float('-inf'):
+                        cleaned[key] = None
+                    else:
+                        cleaned[key] = value
+                cleaned_records.append(cleaned)
+            
+            return cleaned_records
+
     def get_highest_oi_strike(self):
-        """Find the two strikes with highest OI and whether each is a call or put"""
+        """Find the three strikes with highest OI and whether each is a call or put"""
         with self.lock:
             source_df = self.df_latest if self.df_latest is not None else self.df
             if source_df is None:
@@ -176,6 +219,12 @@ class AppState:
                 result['second_strike'] = second['strike']
                 result['second_type'] = second['type']
                 result['second_oi_value'] = second['oi_value']
+            
+            if len(candidates) >= 3:
+                third = candidates[2]
+                result['third_strike'] = third['strike']
+                result['third_type'] = third['type']
+                result['third_oi_value'] = third['oi_value']
             
             return result
 

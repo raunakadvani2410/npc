@@ -3,6 +3,7 @@ let currentState = 'IDLE';
 let currentTab = null;
 let rocData = [];
 let referenceData = [];
+let rawData = [];
 let highestOiData = {};
 
 // DOM Elements
@@ -108,6 +109,7 @@ async function handleReset() {
         // Clear local state
         rocData = [];
         referenceData = [];
+        rawData = [];
         highestOiData = {};
         currentTab = null;
         tabsContainer.style.display = 'none';
@@ -216,19 +218,22 @@ async function fetchData() {
     }
     
     try {
-        const [roc, reference, highestOi] = await Promise.all([
+        const [roc, reference, raw, highestOi] = await Promise.all([
             apiCall('roc'),
             apiCall('reference'),
+            apiCall('raw'),
             apiCall('highest_oi')
         ]);
         
         rocData = roc || [];
         referenceData = reference || [];
+        rawData = raw || [];
         highestOiData = highestOi || {};
         
         console.log('Fetched data:', { 
             rocLength: rocData.length, 
             refLength: referenceData.length,
+            rawLength: rawData.length,
             highestOi: highestOiData
         });
         
@@ -271,13 +276,15 @@ function renderTables() {
 
 function updateTabHighlights() {
     document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('highest-oi-call', 'highest-oi-put', 'second-oi-call', 'second-oi-put');
+        btn.classList.remove('highest-oi-call', 'highest-oi-put', 'second-oi-call', 'second-oi-put', 'third-oi-call', 'third-oi-put');
         
         const strike = parseInt(btn.dataset.strike);
         if (highestOiData.strike === strike) {
             btn.classList.add(highestOiData.type === 'call' ? 'highest-oi-call' : 'highest-oi-put');
         } else if (highestOiData.second_strike === strike) {
             btn.classList.add(highestOiData.second_type === 'call' ? 'second-oi-call' : 'second-oi-put');
+        } else if (highestOiData.third_strike === strike) {
+            btn.classList.add(highestOiData.third_type === 'call' ? 'third-oi-call' : 'third-oi-put');
         }
     });
 }
@@ -299,6 +306,8 @@ function renderTabs(strikes) {
             tabBtn.classList.add(highestOiData.type === 'call' ? 'highest-oi-call' : 'highest-oi-put');
         } else if (highestOiData.second_strike === strike) {
             tabBtn.classList.add(highestOiData.second_type === 'call' ? 'second-oi-call' : 'second-oi-put');
+        } else if (highestOiData.third_strike === strike) {
+            tabBtn.classList.add(highestOiData.third_type === 'call' ? 'third-oi-call' : 'third-oi-put');
         }
         
         if (index === 0) {
@@ -358,6 +367,7 @@ function updateTabContent(strike) {
     
     // Filter data for this strike
     const referenceForStrike = referenceData.filter(row => row['Strike Price'] === strike);
+    const rawForStrike = rawData.filter(row => row['Strike Price'] === strike);
     const rocForStrike = rocData.filter(row => row['Strike Price'] === strike)
         .sort((a, b) => new Date(b['Time (ROC)']) - new Date(a['Time (ROC)']));
     
@@ -369,6 +379,14 @@ function updateTabContent(strike) {
         html += '<div class="table-section">';
         html += '<h4>Reference Data (t0)</h4>';
         html += buildTable(referenceForStrike, false);
+        html += '</div>';
+    }
+    
+    // Raw data table
+    if (rawForStrike.length > 0) {
+        html += '<div class="table-section">';
+        html += '<h4>Raw Data</h4>';
+        html += buildTable(rawForStrike, false);
         html += '</div>';
     }
     
@@ -406,7 +424,7 @@ function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
         'OI Lakhs (Puts)', 'OI Lakhs (Puts) %',
         'Volume (Puts)', 'Volume (Puts) %',
         'Remarks (Puts)',
-        'Time (ROC)', 'Time (t0)'
+        'Time (ROC)', 'Time (t0)', 'Time'
     ].filter(col => col in data[0]); // Only include columns that exist in the data
     
     const columnsToStyle = [

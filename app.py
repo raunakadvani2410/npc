@@ -317,9 +317,17 @@ def get_reference():
     return jsonify(data)
 
 
+@app.route('/api/raw', methods=['GET'])
+def get_raw():
+    data = app_state.get_raw_data()
+    if data is None:
+        return jsonify([])
+    return jsonify(data)
+
+
 @app.route('/api/highest_oi', methods=['GET'])
 def get_highest_oi():
-    """Returns the strike price with highest OI and whether it's a call or put"""
+    """Returns the strike prices with highest OI and whether each is a call or put"""
     result = app_state.get_highest_oi_strike()
     if result is None:
         return jsonify({})

@@ -281,6 +281,16 @@ body {
     border-bottom-width: 2px;
 }
 
+.tab-button.third-oi-call {
+    border: 2px dashed rgba(255, 75, 75, 0.6);
+    border-bottom-width: 2px;
+}
+
+.tab-button.third-oi-put {
+    border: 2px dashed rgba(76, 175, 80, 0.6);
+    border-bottom-width: 2px;
+}
+
 .tab-content {
     display: none;
 }
