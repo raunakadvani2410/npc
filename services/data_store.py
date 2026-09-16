@@ -317,7 +317,7 @@ class AppState:
         """Aggregate OI and LTP change across both sides of the top-3 strike prices by OI."""
         with self.lock:
             source_df = self.df_latest if self.df_latest is not None else self.df
-            prev_df = self.df_previous
+            ref_df = self.df  # Reference data from 9:15 AM (t0)
             if source_df is None:
                 return None
 
@@ -350,21 +350,21 @@ class AppState:
             avg_call_ltp_change = None
             avg_put_ltp_change = None
 
-            if prev_df is not None:
+            if ref_df is not None:
                 call_changes = []
                 put_changes = []
                 for s in top3:
-                    prev_row = prev_df[prev_df['strike_price'] == s['strike']]
-                    if not prev_row.empty:
-                        prev_call_ltp = float(prev_row['ltp_calls'].iloc[0])
-                        if prev_call_ltp != 0 and not math.isnan(prev_call_ltp):
+                    ref_row = ref_df[ref_df['strike_price'] == s['strike']]
+                    if not ref_row.empty:
+                        ref_call_ltp = float(ref_row['ltp_calls'].iloc[0])
+                        if ref_call_ltp != 0 and not math.isnan(ref_call_ltp):
                             call_changes.append(
-                                ((s['call_ltp'] - prev_call_ltp) / prev_call_ltp) * 100
+                                ((s['call_ltp'] - ref_call_ltp) / ref_call_ltp) * 100
                             )
-                        prev_put_ltp = float(prev_row['ltp_puts'].iloc[0])
-                        if prev_put_ltp != 0 and not math.isnan(prev_put_ltp):
+                        ref_put_ltp = float(ref_row['ltp_puts'].iloc[0])
+                        if ref_put_ltp != 0 and not math.isnan(ref_put_ltp):
                             put_changes.append(
-                                ((s['put_ltp'] - prev_put_ltp) / prev_put_ltp) * 100
+                                ((s['put_ltp'] - ref_put_ltp) / ref_put_ltp) * 100
                             )
                 if call_changes:
                     avg_call_ltp_change = round(sum(call_changes) / len(call_changes), 2)

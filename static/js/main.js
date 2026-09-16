@@ -324,11 +324,11 @@ function renderTop3Summary() {
                 <span class="metric-value">${top3Summary.total_put_oi.toFixed(2)} L</span>
             </div>
             <div class="metric call-metric">
-                <span class="metric-label">Avg Call LTP Δ (t-1)</span>
+                <span class="metric-label">Avg Call LTP Δ (vs t0)</span>
                 <span class="metric-value">${callLtp}</span>
             </div>
             <div class="metric put-metric">
-                <span class="metric-label">Avg Put LTP Δ (t-1)</span>
+                <span class="metric-label">Avg Put LTP Δ (vs t0)</span>
                 <span class="metric-value">${putLtp}</span>
             </div>
         </div>
