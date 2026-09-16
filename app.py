@@ -15,7 +15,7 @@ from pyvirtualdisplay import Display
 from services.data_store import app_state
 from services.scraper import enter_webpage, login, submit_otp, find_and_return_table, find_and_return_table_no_button
 from services.data_processor import build_dataframe, slice_df, calculate_roc
-from config import SENSIBULL_URL, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS
+from config import SENSIBULL_URL, INITIAL_WAIT_SECONDS, SCRAPING_INTERVAL_SECONDS, TRADING_END_HOUR, TRADING_END_MINUTE
 
 app = Flask(__name__)
 
@@ -74,7 +74,7 @@ def scraping_loop():
         # Wait until trading hours if before market open
         from config import TRADING_START_HOUR, TRADING_START_MINUTE
         while not app_state.should_stop:
-            if is_time_between(dt_time(TRADING_START_HOUR, TRADING_START_MINUTE), dt_time(15, 30)):
+            if is_time_between(dt_time(TRADING_START_HOUR, TRADING_START_MINUTE), dt_time(TRADING_END_HOUR, TRADING_END_MINUTE)):
                 break
             app_state.add_log("Market not open yet, waiting for 9:15 AM IST...")
             time.sleep(10)  # Check every 10 seconds
@@ -99,6 +99,10 @@ def scraping_loop():
         app_state.df = slice_df(app_state.df, app_state.nifty_futures)
         
         app_state.add_log("Initial data fetched successfully")
+        
+        # Load previous day's close data from file (display only, no calculations)
+        app_state.load_prev_close()
+        
         app_state.add_log(f"Waiting {INITIAL_WAIT_SECONDS} seconds before first update")
         time.sleep(INITIAL_WAIT_SECONDS)
         
@@ -106,7 +110,7 @@ def scraping_loop():
         app_state.set_state('SCRAPING')
         
         # Main scraping loop
-        while not app_state.should_stop and is_time_between(dt_time(TRADING_START_HOUR, TRADING_START_MINUTE), dt_time(15, 30)):
+        while not app_state.should_stop and is_time_between(dt_time(TRADING_START_HOUR, TRADING_START_MINUTE), dt_time(TRADING_END_HOUR, TRADING_END_MINUTE)):
             try:
                 app_state.add_log(f"Fetching update #{app_state.counter + 1}")
                 
@@ -116,6 +120,8 @@ def scraping_loop():
                 df_1 = slice_df(df_1, app_state.nifty_futures)
                 
                 with app_state.lock:
+                    # Track t-1 for top-3 LTP change calculation
+                    app_state.df_previous = app_state.df_latest if app_state.df_latest is not None else app_state.df
                     app_state.df_latest = df_1
                 
                 # Calculate ROC
@@ -156,6 +162,8 @@ def scraping_loop():
             app_state.add_log("Scraping stopped by user")
         else:
             app_state.add_log("Outside trading hours, stopping scraping")
+            # Persist last snapshot as previous day's close for next session
+            app_state.save_prev_close()
         
         cleanup()
         
@@ -329,6 +337,23 @@ def get_raw():
 def get_highest_oi():
     """Returns the strike prices with highest OI and whether each is a call or put"""
     result = app_state.get_highest_oi_strike()
+    if result is None:
+        return jsonify({})
+    return jsonify(result)
+
+
+@app.route('/api/prev_close', methods=['GET'])
+def get_prev_close():
+    data = app_state.get_prev_close_data()
+    if data is None:
+        return jsonify([])
+    return jsonify(data)
+
+
+@app.route('/api/top3_summary', methods=['GET'])
+def get_top3_summary():
+    """Aggregated OI totals and avg LTP % change for the top-3 highlighted entries."""
+    result = app_state.get_top3_oi_summary()
     if result is None:
         return jsonify({})
     return jsonify(result)

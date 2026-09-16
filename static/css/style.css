@@ -454,6 +454,84 @@ body {
     }
 }
 
+/* Top 3 OI Summary */
+.top3-summary {
+    background-color: #1a1d28;
+    border: 1px solid #262730;
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.top3-header {
+    font-size: 0.9rem;
+    color: #a3a8b8;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.top3-entry {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.top3-entry {
+    background-color: rgba(163, 168, 184, 0.15);
+    color: #fafafa;
+}
+
+.top3-entry small {
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.top3-metrics {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #a3a8b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fafafa;
+}
+
+.call-metric .metric-value {
+    color: #ff6b6b;
+}
+
+.put-metric .metric-value {
+    color: #66bb6a;
+}
+
+/* Previous Day's Close */
+.prev-close-section h4 {
+    color: #ffa726 !important;
+}
+
+.prev-close-section .data-table {
+    opacity: 0.85;
+}
+
 /* Loading animation */
 @keyframes pulse {
     0%, 100% {

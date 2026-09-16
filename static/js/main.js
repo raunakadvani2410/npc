@@ -5,6 +5,8 @@ let rocData = [];
 let referenceData = [];
 let rawData = [];
 let highestOiData = {};
+let prevCloseData = [];
+let top3Summary = {};
 
 // DOM Elements
 const startBtn = document.getElementById('start-btn');
@@ -111,6 +113,8 @@ async function handleReset() {
         referenceData = [];
         rawData = [];
         highestOiData = {};
+        prevCloseData = [];
+        top3Summary = {};
         currentTab = null;
         tabsContainer.style.display = 'none';
         tabsHeader.innerHTML = '';
@@ -218,23 +222,29 @@ async function fetchData() {
     }
     
     try {
-        const [roc, reference, raw, highestOi] = await Promise.all([
+        const [roc, reference, raw, highestOi, prevClose, top3] = await Promise.all([
             apiCall('roc'),
             apiCall('reference'),
             apiCall('raw'),
-            apiCall('highest_oi')
+            apiCall('highest_oi'),
+            apiCall('prev_close'),
+            apiCall('top3_summary')
         ]);
         
         rocData = roc || [];
         referenceData = reference || [];
         rawData = raw || [];
         highestOiData = highestOi || {};
+        prevCloseData = prevClose || [];
+        top3Summary = top3 || {};
         
         console.log('Fetched data:', { 
             rocLength: rocData.length, 
             refLength: referenceData.length,
             rawLength: rawData.length,
-            highestOi: highestOiData
+            highestOi: highestOiData,
+            prevCloseLength: prevCloseData.length,
+            top3Summary: top3Summary
         });
         
         if (rocData.length > 0) {
@@ -260,6 +270,9 @@ function renderTables() {
     // Show tabs container
     tabsContainer.style.display = 'block';
     
+    // Render top-3 OI summary above tabs
+    renderTop3Summary();
+    
     // Render tabs if needed
     if (tabsHeader.children.length !== strikes.length) {
         renderTabs(strikes);
@@ -272,6 +285,54 @@ function renderTables() {
     if (currentTab !== null) {
         updateTabContent(currentTab);
     }
+}
+
+function renderTop3Summary() {
+    let summaryDiv = document.getElementById('top3-summary');
+    if (!summaryDiv) {
+        summaryDiv = document.createElement('div');
+        summaryDiv.id = 'top3-summary';
+        summaryDiv.className = 'top3-summary';
+        tabsContainer.insertBefore(summaryDiv, tabsHeader);
+    }
+
+    if (!top3Summary.top3 || top3Summary.top3.length === 0) {
+        summaryDiv.innerHTML = '';
+        return;
+    }
+
+    const entries = top3Summary.top3.map(e =>
+        `<span class="top3-entry">${e.strike} <small>(C: ${e.call_oi} L / P: ${e.put_oi} L)</small></span>`
+    ).join('');
+
+    const callSign = top3Summary.avg_call_ltp_change > 0 ? '+' : '';
+    const putSign  = top3Summary.avg_put_ltp_change > 0  ? '+' : '';
+    const callLtp  = top3Summary.avg_call_ltp_change !== null
+        ? `${callSign}${top3Summary.avg_call_ltp_change.toFixed(2)}%` : '—';
+    const putLtp   = top3Summary.avg_put_ltp_change !== null
+        ? `${putSign}${top3Summary.avg_put_ltp_change.toFixed(2)}%` : '—';
+
+    summaryDiv.innerHTML = `
+        <div class="top3-header">Top 3 OI Strikes: ${entries}</div>
+        <div class="top3-metrics">
+            <div class="metric call-metric">
+                <span class="metric-label">Call OI Total</span>
+                <span class="metric-value">${top3Summary.total_call_oi.toFixed(2)} L</span>
+            </div>
+            <div class="metric put-metric">
+                <span class="metric-label">Put OI Total</span>
+                <span class="metric-value">${top3Summary.total_put_oi.toFixed(2)} L</span>
+            </div>
+            <div class="metric call-metric">
+                <span class="metric-label">Avg Call LTP Δ (t-1)</span>
+                <span class="metric-value">${callLtp}</span>
+            </div>
+            <div class="metric put-metric">
+                <span class="metric-label">Avg Put LTP Δ (t-1)</span>
+                <span class="metric-value">${putLtp}</span>
+            </div>
+        </div>
+    `;
 }
 
 function updateTabHighlights() {
@@ -366,6 +427,7 @@ function updateTabContent(strike) {
     const scrollTop = rocTableWrapper ? rocTableWrapper.scrollTop : 0;
     
     // Filter data for this strike
+    const prevCloseForStrike = prevCloseData.filter(row => row['Strike Price'] === strike);
     const referenceForStrike = referenceData.filter(row => row['Strike Price'] === strike);
     const rawForStrike = rawData.filter(row => row['Strike Price'] === strike);
     const rocForStrike = rocData.filter(row => row['Strike Price'] === strike)
@@ -373,6 +435,14 @@ function updateTabContent(strike) {
     
     // Build HTML
     let html = '';
+    
+    // Previous Day's Close table (display only)
+    if (prevCloseForStrike.length > 0) {
+        html += '<div class="table-section prev-close-section">';
+        html += '<h4>Previous Day\'s Close</h4>';
+        html += buildTable(prevCloseForStrike, false);
+        html += '</div>';
+    }
     
     // Reference table
     if (referenceForStrike.length > 0) {
@@ -424,7 +494,7 @@ function buildTable(data, applyColorCoding, freezeFirstTwoRows = false) {
         'OI Lakhs (Puts)', 'OI Lakhs (Puts) %',
         'Volume (Puts)', 'Volume (Puts) %',
         'Remarks (Puts)',
-        'Time (ROC)', 'Time (t0)', 'Time'
+        'Time (ROC)', 'Time (t0)', 'Time (Prev Close)', 'Time'
     ].filter(col => col in data[0]); // Only include columns that exist in the data
     
     const columnsToStyle = [
