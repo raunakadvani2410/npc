@@ -270,8 +270,11 @@ function renderTables() {
     // Show tabs container
     tabsContainer.style.display = 'block';
     
-    // Render top-3 OI summary above tabs
-    renderTop3Summary();
+    // Drop the old above-tabs summary if it exists from a previous JS version
+    const legacySummary = document.getElementById('top3-summary');
+    if (legacySummary && legacySummary.parentElement === tabsContainer) {
+        legacySummary.remove();
+    }
     
     // Render tabs if needed
     if (tabsHeader.children.length !== strikes.length) {
@@ -287,18 +290,9 @@ function renderTables() {
     }
 }
 
-function renderTop3Summary() {
-    let summaryDiv = document.getElementById('top3-summary');
-    if (!summaryDiv) {
-        summaryDiv = document.createElement('div');
-        summaryDiv.id = 'top3-summary';
-        summaryDiv.className = 'top3-summary';
-        tabsContainer.insertBefore(summaryDiv, tabsHeader);
-    }
-
+function buildTop3SummaryHtml() {
     if (!top3Summary.top3 || top3Summary.top3.length === 0) {
-        summaryDiv.innerHTML = '';
-        return;
+        return '';
     }
 
     const entries = top3Summary.top3.map(e =>
@@ -312,24 +306,26 @@ function renderTop3Summary() {
     const putLtp   = top3Summary.avg_put_ltp_change !== null
         ? `${putSign}${top3Summary.avg_put_ltp_change.toFixed(2)}%` : '—';
 
-    summaryDiv.innerHTML = `
-        <div class="top3-header">Top 3 OI Strikes: ${entries}</div>
-        <div class="top3-metrics">
-            <div class="metric call-metric">
-                <span class="metric-label">Call OI Total</span>
-                <span class="metric-value">${top3Summary.total_call_oi.toFixed(2)} L</span>
-            </div>
-            <div class="metric put-metric">
-                <span class="metric-label">Put OI Total</span>
-                <span class="metric-value">${top3Summary.total_put_oi.toFixed(2)} L</span>
-            </div>
-            <div class="metric call-metric">
-                <span class="metric-label">Avg Call LTP Δ (vs t0)</span>
-                <span class="metric-value">${callLtp}</span>
-            </div>
-            <div class="metric put-metric">
-                <span class="metric-label">Avg Put LTP Δ (vs t0)</span>
-                <span class="metric-value">${putLtp}</span>
+    return `
+        <div class="top3-summary">
+            <div class="top3-header">Top 3 OI Strikes: ${entries}</div>
+            <div class="top3-metrics">
+                <div class="metric call-metric">
+                    <span class="metric-label">Call OI Total</span>
+                    <span class="metric-value">${top3Summary.total_call_oi.toFixed(2)} L</span>
+                </div>
+                <div class="metric put-metric">
+                    <span class="metric-label">Put OI Total</span>
+                    <span class="metric-value">${top3Summary.total_put_oi.toFixed(2)} L</span>
+                </div>
+                <div class="metric call-metric">
+                    <span class="metric-label">Avg Call LTP Δ (vs t0)</span>
+                    <span class="metric-value">${callLtp}</span>
+                </div>
+                <div class="metric put-metric">
+                    <span class="metric-label">Avg Put LTP Δ (vs t0)</span>
+                    <span class="metric-value">${putLtp}</span>
+                </div>
             </div>
         </div>
     `;
@@ -459,6 +455,8 @@ function updateTabContent(strike) {
         html += buildTable(rawForStrike, false);
         html += '</div>';
     }
+
+    html += buildTop3SummaryHtml();
     
     // ROC table
     if (rocForStrike.length > 0) {
