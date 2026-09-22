@@ -349,27 +349,45 @@ class AppState:
 
             avg_call_ltp_change = None
             avg_put_ltp_change = None
+            avg_call_oi_change = None
+            avg_put_oi_change = None
 
             if ref_df is not None:
-                call_changes = []
-                put_changes = []
+                call_ltp_changes = []
+                put_ltp_changes = []
+                call_oi_changes = []
+                put_oi_changes = []
                 for s in top3:
                     ref_row = ref_df[ref_df['strike_price'] == s['strike']]
                     if not ref_row.empty:
                         ref_call_ltp = float(ref_row['ltp_calls'].iloc[0])
                         if ref_call_ltp != 0 and not math.isnan(ref_call_ltp):
-                            call_changes.append(
+                            call_ltp_changes.append(
                                 ((s['call_ltp'] - ref_call_ltp) / ref_call_ltp) * 100
                             )
                         ref_put_ltp = float(ref_row['ltp_puts'].iloc[0])
                         if ref_put_ltp != 0 and not math.isnan(ref_put_ltp):
-                            put_changes.append(
+                            put_ltp_changes.append(
                                 ((s['put_ltp'] - ref_put_ltp) / ref_put_ltp) * 100
                             )
-                if call_changes:
-                    avg_call_ltp_change = round(sum(call_changes) / len(call_changes), 2)
-                if put_changes:
-                    avg_put_ltp_change = round(sum(put_changes) / len(put_changes), 2)
+                        ref_call_oi = float(ref_row['oi_lakhs_calls'].iloc[0])
+                        if ref_call_oi != 0 and not math.isnan(ref_call_oi):
+                            call_oi_changes.append(
+                                ((s['call_oi'] - ref_call_oi) / ref_call_oi) * 100
+                            )
+                        ref_put_oi = float(ref_row['oi_lakh_puts'].iloc[0])
+                        if ref_put_oi != 0 and not math.isnan(ref_put_oi):
+                            put_oi_changes.append(
+                                ((s['put_oi'] - ref_put_oi) / ref_put_oi) * 100
+                            )
+                if call_ltp_changes:
+                    avg_call_ltp_change = round(sum(call_ltp_changes) / len(call_ltp_changes), 2)
+                if put_ltp_changes:
+                    avg_put_ltp_change = round(sum(put_ltp_changes) / len(put_ltp_changes), 2)
+                if call_oi_changes:
+                    avg_call_oi_change = round(sum(call_oi_changes) / len(call_oi_changes), 2)
+                if put_oi_changes:
+                    avg_put_oi_change = round(sum(put_oi_changes) / len(put_oi_changes), 2)
 
             return {
                 'top3': [
@@ -383,8 +401,26 @@ class AppState:
                 'total_call_oi': round(total_call_oi, 2),
                 'total_put_oi': round(total_put_oi, 2),
                 'avg_call_ltp_change': avg_call_ltp_change,
-                'avg_put_ltp_change': avg_put_ltp_change
+                'avg_put_ltp_change': avg_put_ltp_change,
+                'avg_call_oi_change': avg_call_oi_change,
+                'avg_put_oi_change': avg_put_oi_change,
+                'call_remark': self._remark_from_deltas(avg_call_oi_change, avg_call_ltp_change),
+                'put_remark': self._remark_from_deltas(avg_put_oi_change, avg_put_ltp_change)
             }
+
+    @staticmethod
+    def _remark_from_deltas(oi_pct, ltp_pct):
+        if oi_pct is None or ltp_pct is None:
+            return "NA"
+        if oi_pct < 0 and ltp_pct > 0:
+            return "Short Covering"
+        if oi_pct > 0 and ltp_pct < 0:
+            return "Short Buildup"
+        if oi_pct < 0 and ltp_pct < 0:
+            return "Long Unwinding"
+        if oi_pct > 0 and ltp_pct > 0:
+            return "Long Buildup"
+        return "NA"
 
 
 # Global app state instance

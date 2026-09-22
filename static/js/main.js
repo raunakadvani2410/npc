@@ -290,6 +290,24 @@ function renderTables() {
     }
 }
 
+function formatSignedPct(value) {
+    if (value === null || value === undefined) {
+        return '—';
+    }
+    const sign = value > 0 ? '+' : '';
+    return `${sign}${value.toFixed(2)}%`;
+}
+
+function remarkColorClass(remark) {
+    if (remark === 'Short Buildup' || remark === 'Long Unwinding') {
+        return 'remark-bearish';
+    }
+    if (remark === 'Short Covering' || remark === 'Long Buildup') {
+        return 'remark-bullish';
+    }
+    return '';
+}
+
 function buildTop3SummaryHtml() {
     if (!top3Summary.top3 || top3Summary.top3.length === 0) {
         return '';
@@ -299,32 +317,48 @@ function buildTop3SummaryHtml() {
         `<span class="top3-entry">${e.strike} <small>(C: ${e.call_oi} L / P: ${e.put_oi} L)</small></span>`
     ).join('');
 
-    const callSign = top3Summary.avg_call_ltp_change > 0 ? '+' : '';
-    const putSign  = top3Summary.avg_put_ltp_change > 0  ? '+' : '';
-    const callLtp  = top3Summary.avg_call_ltp_change !== null
-        ? `${callSign}${top3Summary.avg_call_ltp_change.toFixed(2)}%` : '—';
-    const putLtp   = top3Summary.avg_put_ltp_change !== null
-        ? `${putSign}${top3Summary.avg_put_ltp_change.toFixed(2)}%` : '—';
+    const callRemark = top3Summary.call_remark || 'NA';
+    const putRemark = top3Summary.put_remark || 'NA';
 
     return `
         <div class="top3-summary">
             <div class="top3-header">Top 3 OI Strikes: ${entries}</div>
-            <div class="top3-metrics">
-                <div class="metric call-metric">
-                    <span class="metric-label">Call OI Total</span>
-                    <span class="metric-value">${top3Summary.total_call_oi.toFixed(2)} L</span>
+            <div class="top3-sides">
+                <div class="top3-side ${remarkColorClass(callRemark)}">
+                    <div class="top3-side-title">Calls</div>
+                    <div class="top3-metrics">
+                        <div class="metric">
+                            <span class="metric-label">OI Total</span>
+                            <span class="metric-value">${top3Summary.total_call_oi.toFixed(2)} L</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg OI Δ (vs t0)</span>
+                            <span class="metric-value">${formatSignedPct(top3Summary.avg_call_oi_change)}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg LTP Δ (vs t0)</span>
+                            <span class="metric-value">${formatSignedPct(top3Summary.avg_call_ltp_change)}</span>
+                        </div>
+                    </div>
+                    <div class="top3-remark">${escapeHtml(callRemark)}</div>
                 </div>
-                <div class="metric put-metric">
-                    <span class="metric-label">Put OI Total</span>
-                    <span class="metric-value">${top3Summary.total_put_oi.toFixed(2)} L</span>
-                </div>
-                <div class="metric call-metric">
-                    <span class="metric-label">Avg Call LTP Δ (vs t0)</span>
-                    <span class="metric-value">${callLtp}</span>
-                </div>
-                <div class="metric put-metric">
-                    <span class="metric-label">Avg Put LTP Δ (vs t0)</span>
-                    <span class="metric-value">${putLtp}</span>
+                <div class="top3-side ${remarkColorClass(putRemark)}">
+                    <div class="top3-side-title">Puts</div>
+                    <div class="top3-metrics">
+                        <div class="metric">
+                            <span class="metric-label">OI Total</span>
+                            <span class="metric-value">${top3Summary.total_put_oi.toFixed(2)} L</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg OI Δ (vs t0)</span>
+                            <span class="metric-value">${formatSignedPct(top3Summary.avg_put_oi_change)}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg LTP Δ (vs t0)</span>
+                            <span class="metric-value">${formatSignedPct(top3Summary.avg_put_ltp_change)}</span>
+                        </div>
+                    </div>
+                    <div class="top3-remark">${escapeHtml(putRemark)}</div>
                 </div>
             </div>
         </div>

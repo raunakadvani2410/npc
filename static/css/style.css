@@ -490,9 +490,41 @@ body {
     opacity: 0.8;
 }
 
+.top3-sides {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.top3-side {
+    background-color: #262730;
+    border-radius: 0.4rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid #3a3d4a;
+}
+
+.top3-side.remark-bearish {
+    background-color: #3d1f1f;
+    border-color: #ff4b4b;
+}
+
+.top3-side.remark-bullish {
+    background-color: #1e3d24;
+    border-color: #4caf50;
+}
+
+.top3-side-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #a3a8b8;
+    margin-bottom: 0.6rem;
+}
+
 .top3-metrics {
     display: flex;
-    gap: 2rem;
+    gap: 1.25rem;
     flex-wrap: wrap;
 }
 
@@ -510,17 +542,22 @@ body {
 }
 
 .metric-value {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: #fafafa;
 }
 
-.call-metric .metric-value {
-    color: #ff6b6b;
+.top3-remark {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fafafa;
 }
 
-.put-metric .metric-value {
-    color: #66bb6a;
+@media (max-width: 768px) {
+    .top3-sides {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Previous Day's Close */
