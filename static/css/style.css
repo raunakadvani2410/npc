@@ -554,6 +554,20 @@ body {
     color: #fafafa;
 }
 
+.strike-money-flow {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    background-color: #1a1d28;
+    border: 1px solid #262730;
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+}
+
+.money-flow-section h4 {
+    color: #90caf9 !important;
+}
+
 @media (max-width: 768px) {
     .top3-sides {
         grid-template-columns: 1fr;

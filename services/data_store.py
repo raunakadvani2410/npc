@@ -344,8 +344,19 @@ class AppState:
             if not top3:
                 return None
 
+            from config import NIFTY_LOT_SIZE
+
             total_call_oi = sum(s['call_oi'] for s in top3)
             total_put_oi = sum(s['put_oi'] for s in top3)
+
+            for s in top3:
+                call_ltp = s['call_ltp'] if not math.isnan(s['call_ltp']) else 0
+                put_ltp = s['put_ltp'] if not math.isnan(s['put_ltp']) else 0
+                s['call_money_flow'] = s['call_oi'] * call_ltp * NIFTY_LOT_SIZE
+                s['put_money_flow'] = s['put_oi'] * put_ltp * NIFTY_LOT_SIZE
+
+            total_call_money_flow = sum(s['call_money_flow'] for s in top3)
+            total_put_money_flow = sum(s['put_money_flow'] for s in top3)
 
             avg_call_ltp_change = None
             avg_put_ltp_change = None
@@ -394,12 +405,16 @@ class AppState:
                     {
                         'strike': s['strike'],
                         'call_oi': round(s['call_oi'], 2),
-                        'put_oi': round(s['put_oi'], 2)
+                        'put_oi': round(s['put_oi'], 2),
+                        'call_money_flow': round(s['call_money_flow'], 2),
+                        'put_money_flow': round(s['put_money_flow'], 2)
                     }
                     for s in top3
                 ],
                 'total_call_oi': round(total_call_oi, 2),
                 'total_put_oi': round(total_put_oi, 2),
+                'total_call_money_flow': round(total_call_money_flow, 2),
+                'total_put_money_flow': round(total_put_money_flow, 2),
                 'avg_call_ltp_change': avg_call_ltp_change,
                 'avg_put_ltp_change': avg_put_ltp_change,
                 'avg_call_oi_change': avg_call_oi_change,

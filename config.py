@@ -20,6 +20,7 @@ SENSIBULL_URL = 'https://web.sensibull.com/option-chain?tradingsymbol=NIFTY'
 # Strike price configuration
 STRIKE_RANGE = 4  # How many strikes above and below central strike
 STRIKE_INTERVAL = 100  # Strike price intervals
+NIFTY_LOT_SIZE = 65  # Used for money flow = OI lakhs × LTP × lot size
 
 # Chrome driver path
 CHROMEDRIVER_PATH = './chromedriver'

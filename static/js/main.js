@@ -298,6 +298,13 @@ function formatSignedPct(value) {
     return `${sign}${value.toFixed(2)}%`;
 }
 
+function formatMoneyFlow(value) {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+        return '—';
+    }
+    return value.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+}
+
 function remarkColorClass(remark) {
     if (remark === 'Short Buildup' || remark === 'Long Unwinding') {
         return 'remark-bearish';
@@ -314,7 +321,7 @@ function buildTop3SummaryHtml() {
     }
 
     const entries = top3Summary.top3.map(e =>
-        `<span class="top3-entry">${e.strike} <small>(C: ${e.call_oi} L / P: ${e.put_oi} L)</small></span>`
+        `<span class="top3-entry">${e.strike} <small>(C: ${e.call_oi} L / P: ${e.put_oi} L)<br>MF C: ${formatMoneyFlow(e.call_money_flow)} / P: ${formatMoneyFlow(e.put_money_flow)}</small></span>`
     ).join('');
 
     const callRemark = top3Summary.call_remark || 'NA';
@@ -339,6 +346,10 @@ function buildTop3SummaryHtml() {
                             <span class="metric-label">Avg LTP Δ (vs t0)</span>
                             <span class="metric-value">${formatSignedPct(top3Summary.avg_call_ltp_change)}</span>
                         </div>
+                        <div class="metric">
+                            <span class="metric-label">Money Flow</span>
+                            <span class="metric-value">${formatMoneyFlow(top3Summary.total_call_money_flow)}</span>
+                        </div>
                     </div>
                     <div class="top3-remark">${escapeHtml(callRemark)}</div>
                 </div>
@@ -357,8 +368,37 @@ function buildTop3SummaryHtml() {
                             <span class="metric-label">Avg LTP Δ (vs t0)</span>
                             <span class="metric-value">${formatSignedPct(top3Summary.avg_put_ltp_change)}</span>
                         </div>
+                        <div class="metric">
+                            <span class="metric-label">Money Flow</span>
+                            <span class="metric-value">${formatMoneyFlow(top3Summary.total_put_money_flow)}</span>
+                        </div>
                     </div>
                     <div class="top3-remark">${escapeHtml(putRemark)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function buildStrikeMoneyFlowHtml(strike) {
+    if (!top3Summary.top3) {
+        return '';
+    }
+    const entry = top3Summary.top3.find(e => e.strike === strike);
+    if (!entry) {
+        return '';
+    }
+    return `
+        <div class="table-section money-flow-section">
+            <h4>Money Flow (OI × LTP × 65)</h4>
+            <div class="strike-money-flow">
+                <div class="metric">
+                    <span class="metric-label">Call Money Flow</span>
+                    <span class="metric-value">${formatMoneyFlow(entry.call_money_flow)}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Put Money Flow</span>
+                    <span class="metric-value">${formatMoneyFlow(entry.put_money_flow)}</span>
                 </div>
             </div>
         </div>
@@ -489,6 +529,8 @@ function updateTabContent(strike) {
         html += buildTable(rawForStrike, false);
         html += '</div>';
     }
+
+    html += buildStrikeMoneyFlowHtml(strike);
 
     html += buildTop3SummaryHtml();
     
